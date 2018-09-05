@@ -1,0 +1,8 @@
+FILTER=$1
+psql \
+	-c '\x on' \
+	-c '\pset format wrapped' \
+	-c '\pset pager off' \
+	-c "select * from ${FILTER}_report" \
+	;
+	
