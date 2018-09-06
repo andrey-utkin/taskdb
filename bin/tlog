@@ -1,0 +1,5 @@
+# Create a new task in 'completed' state
+
+DESCR="$@"
+# FIXME must use prepared statements
+echo "INSERT INTO tasks (status, description) VALUES ('completed', '$DESCR') RETURNING uuid;" | psql
