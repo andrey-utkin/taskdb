@@ -6,6 +6,7 @@ while read -r LINE; do
 		echo "$LINE"
 		PAYLOAD=${LINE##*payload \"}
 		PAYLOAD=${PAYLOAD%%\" received*}
+		# FIXME turns also literal \n into newlines
 		echo "$PAYLOAD" | sed 's/\\n/\n/g' | "$MYPATH"/taskdb_git_commit_data_dump
 	fi
 done < <(
