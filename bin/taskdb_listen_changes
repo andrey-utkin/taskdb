@@ -1,0 +1,21 @@
+MYPATH=$(dirname $0)
+
+while read -r LINE; do
+	 \
+	if [[ "$LINE" =~ 'Asynchronous notification' ]]; then
+		echo "$LINE"
+		PAYLOAD=${LINE##*payload \"}
+		PAYLOAD=${PAYLOAD%%\" received*}
+		echo "$PAYLOAD" | sed 's/\\n/\n/g' | "$MYPATH"/taskdb_git_commit_data_dump
+	fi
+done < <(
+	(
+	echo 'LISTEN "CHANGES";'
+	while true; do
+		echo 'select 1;'
+		sleep 1
+	done
+	) \
+		| psql \
+		;
+	)

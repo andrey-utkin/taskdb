@@ -58,6 +58,22 @@ CREATE TYPE public.task_status AS ENUM (
 
 
 --
+-- Name: changes_notify_fn(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.changes_notify_fn() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+--DECLARE
+-- variables
+BEGIN
+ PERFORM pg_notify('CHANGES', replace(current_query(), E'\n', '\n'));
+ RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: update_ended_fn(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -207,6 +223,13 @@ ALTER TABLE ONLY public.tasks
 
 ALTER TABLE ONLY public.tasks
     ADD CONSTRAINT tasks_pkey PRIMARY KEY (uuid);
+
+
+--
+-- Name: tasks changes_notify_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER changes_notify_trigger AFTER INSERT OR DELETE OR UPDATE ON public.tasks FOR EACH STATEMENT EXECUTE PROCEDURE public.changes_notify_fn();
 
 
 --
