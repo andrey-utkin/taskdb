@@ -164,8 +164,8 @@ CREATE VIEW public.tdt AS
 --
 
 CREATE VIEW public.tdt_report AS
- SELECT concat('[', tdt.project, '] ', tdt.description) AS title,
-    concat('SCHED ', to_char(tdt.scheduled, 'MM-DD HH24:MI'::text), ' DUE ', to_char(tdt.due, 'MM-DD HH24:MI'::text)) AS sched,
+ SELECT concat((('['::text || tdt.project) || '] '::text), tdt.description) AS title,
+    concat((('SCHED '::text || to_char(tdt.scheduled, 'MM-DD HH24:MI'::text)) || ' '::text), ('DUE '::text || to_char(tdt.due, 'MM-DD HH24:MI'::text))) AS sched,
     tdt.annotation AS annot,
     tdt.uuid
    FROM public.tdt;
@@ -203,7 +203,7 @@ CREATE VIEW public.tdtw AS
 
 CREATE VIEW public.tdtw_report AS
  SELECT tdtw.description AS title,
-    to_char(tdtw.scheduled, 'MM-DD HH24:MI'::text) AS sched,
+    concat((('SCHED '::text || to_char(tdtw.scheduled, 'MM-DD HH24:MI'::text)) || ' '::text), ('DUE '::text || to_char(tdtw.due, 'MM-DD HH24:MI'::text))) AS sched,
     tdtw.annotation AS annot,
     tdtw.uuid
    FROM public.tdtw;
