@@ -164,7 +164,7 @@ CREATE VIEW public.tdt AS
 --
 
 CREATE VIEW public.tdt_report AS
- SELECT ((('['::text || tdt.project) || '] '::text) || tdt.description) AS title,
+ SELECT concat('[', tdt.project, '] ', tdt.description) AS title,
     concat('SCHED ', to_char(tdt.scheduled, 'MM-DD HH24:MI'::text), ' DUE ', to_char(tdt.due, 'MM-DD HH24:MI'::text)) AS sched,
     tdt.annotation AS annot,
     tdt.uuid
