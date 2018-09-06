@@ -1,1 +1,2 @@
-taskdb_report tdtw
+MYPATH=$(dirname $0)
+"$MYPATH"/taskdb_report tdtw
