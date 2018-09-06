@@ -1,5 +1,6 @@
 FILTER=$1
 psql \
+	--quiet \
 	-c '\x on' \
 	-c '\pset format wrapped' \
 	-c '\pset pager off' \
