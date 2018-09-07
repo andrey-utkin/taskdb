@@ -1,0 +1,25 @@
+From 09a95cdcb110fd5129c4af443f0c544648cefc85 Mon Sep 17 00:00:00 2001
+From: Andrey Utkin <andrey_utkin@fastmail.com>
+Date: Thu, 6 Sep 2018 19:59:41 +0100
+Subject: [PATCH 2/3] Stop complaining about too new dateutil
+
+---
+ setup.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/setup.py b/setup.py
+index 9190b85..e460342 100755
+--- a/setup.py
++++ b/setup.py
+@@ -15,7 +15,7 @@ requirements = [
+     'urwid',
+     'pyxdg',
+     'pytz',
+-    'python-dateutil<=2.6.1',
++    'python-dateutil',
+     'configobj',
+     # https://github.com/untitaker/python-atomicwrites/commit/4d12f23227b6a944ab1d99c507a69fdbc7c9ed6d  # noqa
+     'atomicwrites>=0.1.7',
+-- 
+2.16.4
+
