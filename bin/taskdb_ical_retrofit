@@ -22,6 +22,7 @@ conn = psycopg2.connect("dbname=j user=j")
 cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 cur.execute("PREPARE QUERY AS SELECT scheduled, description FROM tasks WHERE uuid = $1");
 cur.execute("PREPARE UPD AS UPDATE tasks SET scheduled = $2, description = $3 WHERE uuid = $1");
+cur.execute("PREPARE INS AS INSERT INTO tasks (uuid, scheduled, description) VALUES($1, $2, $3)");
 
 # List
 result = subprocess.run("khal list --include-calendar fb9ed04e-572b-477f-bdad-d6dbb32c0d82 -o -f 'UID {uid} START {start} TITLE {title}' 2018-01-01 2020-01-01 | grep ^UID", shell=True, check=True, stdout=subprocess.PIPE)
@@ -41,8 +42,12 @@ for line in output.splitlines():
 
     cur.execute("EXECUTE QUERY (%s)", (uid,))
     row = cur.fetchone()
+
     if not row:
+        print("Externally added event, inserting into DB")
+        cur.execute("EXECUTE INS (%s, %s, %s)", (uid, scheduled, description))
         continue
+
     changed = False
     if row['description'] != description:
         changed = True
