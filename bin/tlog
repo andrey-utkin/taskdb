@@ -1,5 +1,22 @@
-# Create a new task in 'completed' state
+#!/usr/bin/env python3
 
-DESCR="$@"
-# FIXME must use prepared statements
-echo "INSERT INTO tasks (status, description) VALUES ('completed', '$DESCR') RETURNING uuid;" | psql
+"""Create a new task in 'completed' state"""
+
+import sys
+import psycopg2
+import psycopg2.extras
+
+description = sys.argv[1]
+if len(sys.argv) > 2:
+    project = sys.argv[2]
+else:
+    project = None
+
+conn = psycopg2.connect("dbname=j user=j")
+cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+cur.execute("PREPARE INS_FROM_CLI_COMPLETED AS INSERT INTO tasks (scheduled, status, description, project) VALUES(CURRENT_TIMESTAMP, 'completed', $1, $2)");
+
+cur.execute("EXECUTE INS_FROM_CLI_COMPLETED (%s, %s)", (description, project))
+conn.commit()
+row = cur.fetchone()
+print(row['uuid'])

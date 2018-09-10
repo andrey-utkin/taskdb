@@ -1,3 +1,22 @@
-DESCR="$@"
-# TODO must use prepared statements
-echo "INSERT INTO tasks (description, scheduled) VALUES ('$DESCR', CURRENT_TIMESTAMP) RETURNING uuid;" | psql
+#!/usr/bin/env python3
+
+"""Add new task to DB"""
+
+import sys
+import psycopg2
+import psycopg2.extras
+
+description = sys.argv[1]
+if len(sys.argv) > 2:
+    project = sys.argv[2]
+else:
+    project = None
+
+conn = psycopg2.connect("dbname=j user=j")
+cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+cur.execute("PREPARE INS_FROM_CLI AS INSERT INTO tasks (scheduled, description, project) VALUES(CURRENT_TIMESTAMP, $1, $2) RETURNING uuid");
+
+cur.execute("EXECUTE INS_FROM_CLI (%s, %s)", (description, project))
+conn.commit()
+row = cur.fetchone()
+print(row['uuid'])
