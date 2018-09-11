@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+
+"""Edit task annotation"""
+
+import os
+import sys
+import subprocess
+import psycopg2
+import psycopg2.extras
+
+uuid = sys.argv[1]
+
+conn = psycopg2.connect("dbname=j user=j")
+cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+cur.execute("PREPARE SEL_FROM_TEA AS SELECT annotation FROM tasks WHERE uuid = $1");
+cur.execute("PREPARE UPD_FROM_TEA AS UPDATE tasks SET annotation = $1 WHERE uuid = $2");
+
+cur.execute("EXECUTE SEL_FROM_TEA (%s)", (uuid,))
+row = cur.fetchone()
+if not row:
+    print('Failed to query the task.')
+    sys.exit(1)
+
+# Put content into file
+with open(uuid, 'wb') as f:
+    f.write(row['annotation'].encode('utf-8'))
+
+# Oddly, doesn't work when pointed at a script
+# FIXME Call $EDITOR
+child = subprocess.Popen(['/usr/bin/nvim', str(uuid)])
+child.wait()
+
+with open(uuid, 'rb') as f:
+    annotation_edited = f.read().decode('utf-8')
+os.unlink(uuid)
+
+if annotation_edited == row['annotation']:
+    print('No edits detected.')
+    sys.exit(0)
+
+cur.execute("EXECUTE UPD_FROM_TEA (%s, %s)", (annotation_edited, uuid))
+
+conn.commit()
