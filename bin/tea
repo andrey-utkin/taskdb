@@ -22,8 +22,9 @@ if not row:
     sys.exit(1)
 
 # Put content into file
-with open(uuid, 'wb') as f:
-    f.write(row['annotation'].encode('utf-8'))
+if row['annotation']:
+    with open(uuid, 'wb') as f:
+        f.write(row['annotation'].encode('utf-8'))
 
 # Oddly, doesn't work when pointed at a script
 # FIXME Call $EDITOR
