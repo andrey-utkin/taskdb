@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import subprocess
+import parse
+import datetime
+import dateutil.parser
+import pytz
+import psycopg2
+import psycopg2.extras
+import icalendar
+
+calendar = 'fb9ed04e-572b-477f-bdad-d6dbb32c0d82'
+
+# Insert or update?
+action = sys.argv[1]
+
+# Locate ical file
+uuid = sys.argv[2]
+filepath = '/home/j/.calendars/' + calendar + '/' + uuid + '.ics'
+
+# Parse it
+# https://gist.github.com/meskarune/63600e64df56a607efa211b9a87fb443
+icalfile = open(filepath, 'rb')
+cal = icalendar.Calendar.from_ical(icalfile.read())
+
+for component in cal.walk():
+    if component.name == "VEVENT":
+        description = component.get('summary')
+        annotation = component.get('description')
+        #location = component.get('location')
+        scheduled = component.get('dtstart').dt
+        dtend = component.get('dtend')
+        duration = None
+        if dtend:
+            duration = int((dtend.dt - scheduled).total_seconds())
+        break
+
+icalfile.close()
+
+stuff = (uuid, scheduled, duration, description, annotation)
+print(stuff)
+
+conn = psycopg2.connect("dbname=j user=j")
+cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+# Depending on $1, insert or update into DB
+if action == 'insert':
+    cur.execute("PREPARE INS_FROM_CAL_IMPORT AS INSERT INTO tasks (uuid, scheduled, duration, description, annotation) VALUES($1, $2, $3, $4, $5)")
+    cur.execute("EXECUTE INS_FROM_CAL_IMPORT (%s, %s, %s, %s, %s)", stuff)
+else:
+    cur.execute("PREPARE UPD_FROM_CAL_IMPORT AS UPDATE tasks SET scheduled = $2, duration = $3, description = $4, annotation = $5 WHERE uuid = $1")
+    cur.execute("EXECUTE UPD_FROM_CAL_IMPORT (%s, %s, %s, %s, %s)", stuff)
+
+conn.commit()

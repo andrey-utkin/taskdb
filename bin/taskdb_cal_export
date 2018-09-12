@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""Generate .ics file for a task"""
+
+import os
+import sys
+import subprocess
+import psycopg2
+import psycopg2.extras
+from datetime import datetime, timedelta
+import pytz
+from icalendar import Calendar, Event
+from icalendar import vCalAddress, vText
+
+
+uuid = sys.argv[1]
+
+conn = psycopg2.connect("dbname=j user=j")
+cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+cur.execute("PREPARE SEL_FROM_WRITE_ICS AS SELECT * FROM tasks WHERE uuid = $1");
+
+cur.execute("EXECUTE SEL_FROM_WRITE_ICS (%s)", (uuid,))
+row = cur.fetchone()
+if not row:
+    print('Failed to query the task.')
+    sys.exit(1)
+
+cal = Calendar()
+
+# Some properties are required to be compliant:
+cal.add('prodid', '-//andrey-utkin//taskdb//')
+cal.add('version', '2.0')
+
+event = Event()
+event.add('summary', row['description'])
+if row['annotation']:
+    event.add('description', row['annotation'])
+
+assert row['scheduled']
+event.add('dtstart', row['scheduled'])
+
+if row['duration'] and row['duration'] != '':
+    dtend = row['scheduled'] + timedelta(seconds=int(row['duration']))
+    event.add('dtend', dtend)
+
+event.add('dtstamp', row['modified'])
+
+event['uid'] = row['uuid']
+
+cal.add_component(event)
+
+# taskdb-test calendar
+directory = '/home/j/.calendars/fb9ed04e-572b-477f-bdad-d6dbb32c0d82'
+f = open(os.path.join(directory, row['uuid'] + '.ics'), 'wb')
+f.write(cal.to_ical())
+f.close()
