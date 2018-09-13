@@ -2,7 +2,7 @@ MYDIR=$(dirname $0)
 
 # Excessive, but harmless.
 # TODO Trigger doing specific re-exports
-"$MYDIR"/taskdb_cal_export_all
+"$MYDIR"/taskdb_cal_export_all > /dev/null
 
 SYNC_LOG_FILE="/home/j/.taskdb/vdirsyncer.out"
 vdirsyncer sync fastmail_calendar/fb9ed04e-572b-477f-bdad-d6dbb32c0d82 > "$SYNC_LOG_FILE"
