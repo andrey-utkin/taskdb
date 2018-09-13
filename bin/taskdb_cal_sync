@@ -1,5 +1,12 @@
 MYDIR=$(dirname $0)
 
+CAL_UUID="fb9ed04e-572b-477f-bdad-d6dbb32c0d82"
+CAL_BASEDIR="$HOME/.calendars"
+
+# Remove all files.
+# This is the simplest way to not leave obsolete (completed, cancelled, deleted) events stuck in the calendar.
+rm "$CAL_BASEDIR/$CAL_UUID/"*
+
 # Excessive, but harmless.
 # TODO Trigger doing specific re-exports
 "$MYDIR"/taskdb_cal_export_all > /dev/null
