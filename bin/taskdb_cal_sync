@@ -7,6 +7,7 @@ MYDIR=$(dirname $0)
 SYNC_LOG_FILE="/home/j/.taskdb/vdirsyncer.out"
 vdirsyncer sync fastmail_calendar/fb9ed04e-572b-477f-bdad-d6dbb32c0d82 > "$SYNC_LOG_FILE"
 VS_RET=$?
+cat "$SYNC_LOG_FILE"
 
 # Look for lines like
 # "Copying (updating) item 2bb6df40-0af5-4f76-acf0-d3fae801dca1 to fastmail_calendar_local/fb9ed04e-572b-477f-bdad-d6dbb32c0d82"
