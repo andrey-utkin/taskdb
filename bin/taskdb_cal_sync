@@ -12,7 +12,7 @@ rm "$CAL_BASEDIR/$CAL_UUID/"*
 "$MYDIR"/taskdb_cal_export_all > /dev/null
 
 SYNC_LOG_FILE="/home/j/.taskdb/vdirsyncer.out"
-vdirsyncer sync fastmail_calendar/fb9ed04e-572b-477f-bdad-d6dbb32c0d82 > "$SYNC_LOG_FILE"
+vdirsyncer sync "fastmail_calendar/$CAL_UUID" > "$SYNC_LOG_FILE"
 VS_RET=$?
 cat "$SYNC_LOG_FILE"
 
