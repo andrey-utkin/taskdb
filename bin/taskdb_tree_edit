@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+
+# Format example:
+# 
+# First time, say, there's "project's top level task" existing with its uuid.
+# User starts with this in editor:
+# 
+# * project's top level task UUID=blah
+# 
+# After editing, user ends up with:
+# 
+# * project's top level task UUID=blah
+#   * subtask 1 DURATION=3600
+#   * subtask 2 DURATION=600
+# 
+# Program creates task entries for new subtasks, saves duration attr, sets top task's dependencies list to UUIDs of new subtasks.
+# Next time editor will present this to user:
+# 
+# * project's top level task UUID=blah
+#   * subtask 1 DURATION=3600 UUID=blah1
+#   * subtask 2 DURATION=600 UUID=blah2
+# 
+# And maybe it'll add that DURATION of top level task will be the sum of subtasks.
+# 
+# Later, user can insert any new lines - program will create task entry for them.
+# Subtasks can be moved around i.e. reparented. Dependencies graph will get updated.
+# Deleted entries with existing UUIDs will be marked as "deleted" in DB.
+
+import os
+import sys
+import subprocess
+import psycopg2
+import psycopg2.extras
+from datetime import datetime, timedelta
+import pytz
+from pprint import pprint
+
+
+TOP_UUID = sys.argv[1]
+
+conn = psycopg2.connect("dbname=j user=j")
+cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+cur.execute("PREPARE SEL_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE uuid = $1");
+
+def parse_deps(db_formatted_deps):
+    a
+
+def get_children(subtasks_uuids):
+    for subtask_uuid in subtasks_uuids:
+        cur.execute("EXECUTE SEL_FROM_TREE_EDIT (%s)", (subtask_uuid,))
+        row = cur.fetchone()
+        if not row:
+            print('Failed to query the task.')
+            sys.exit(1)
+        node = dict()
+        node['node'] = row
+        node['children'] = list()
+        subtasks_uuids = parse_deps(row['dependencies'])
+        node['children'] = get_children(subtasks_uuids)
+        tree['children'].append(node)
+
+tree = dict()
+top_task = get_children((TOP_UUID,))
+tree['node'] = top_task
+tree['children'] = get_children(parse_deps(top_task['dependencies']))
+
+pprint(tree)
+
+cur.execute("EXECUTE SEL_FROM_TREE_EDIT (%s)", (uuid,))
+row = cur.fetchone()
+if not row:
+    print('Failed to query the task.')
+    sys.exit(1)
+
+tree['node'] = row
+
+tree['children'] = list()
+subtasks_uuids = parse_deps(row['dependencies'])
+for subtask_uuid in subtasks_uuids:
+    cur.execute("EXECUTE SEL_FROM_TREE_EDIT (%s)", (subtask_uuid,))
+    row = cur.fetchone()
+    if not row:
+        print('Failed to query the task.')
+        sys.exit(1)
+    node = dict()
+    node['node'] = row
+    node['children'] = list()
+    subtasks_uuids = parse_deps(row['dependencies'])
+    node['children'] = get_children(subtasks_uuids)
+    tree['children'].append(node)
+
+
+    
