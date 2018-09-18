@@ -6,6 +6,10 @@ from pprint import pprint
 import psycopg2
 import psycopg2.extras
 
+mydir = os.path.dirname(__file__)
+mydir = os.path.abspath(mydir)
+mydir += '/'
+
 conn = psycopg2.connect("dbname=j user=j")
 cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -16,7 +20,7 @@ while True:
     if not row:
         break
     pprint(row)
-    child = subprocess.Popen(['/usr/bin/python3', 'bin/taskdb_cal_export', row['uuid']])
+    child = subprocess.Popen(['/usr/bin/python3', mydir + 'taskdb_cal_export', row['uuid']])
     child.wait()
 
 cur.close()
