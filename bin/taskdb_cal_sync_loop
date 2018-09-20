@@ -1,0 +1,9 @@
+#!/bin/bash
+
+MYDIR=$(dirname $0)
+while true
+do
+	date
+	"$MYDIR"/taskdb_cal_sync
+	sleep 1m
+done
