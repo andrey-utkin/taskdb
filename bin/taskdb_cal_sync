@@ -24,7 +24,7 @@ if [[ -d .git ]]; then
 fi
 
 SYNC_LOG_FILE="/home/j/.taskdb/vdirsyncer.out"
-vdirsyncer sync "fastmail_calendar/$CAL_UUID" > "$SYNC_LOG_FILE"
+vdirsyncer sync "fastmail_calendar/$CAL_UUID" &> "$SYNC_LOG_FILE"
 VS_RET=$?
 cat "$SYNC_LOG_FILE"
 
