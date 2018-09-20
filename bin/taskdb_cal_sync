@@ -23,6 +23,7 @@ UUIDS=$(grep "Copying (updating) .* to .*_local/" "$SYNC_LOG_FILE" \
 # Parse and update in DB
 for uuid in $UUIDS; do
 	"$MYDIR/taskdb_cal_import" update "$uuid"
+	sleep 2 # to allow taskdb_listen_changes to pick up individual task changes not mixed together
 done
 
 # Look for lines like
@@ -32,4 +33,5 @@ UUIDS=$(grep "Copying (uploading) .* to .*_local/" "$SYNC_LOG_FILE" \
 # Parse and insert into DB
 for uuid in $UUIDS; do
 	"$MYDIR/taskdb_cal_import" insert "$uuid"
+	sleep 2 # to allow taskdb_listen_changes to pick up individual task changes not mixed together
 done
