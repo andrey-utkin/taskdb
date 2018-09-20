@@ -35,11 +35,12 @@ for component in cal.walk():
         duration = None
         if dtend:
             duration = int((dtend.dt - scheduled).total_seconds())
+        dtstamp = component.get('dtstamp').dt
         break
 
 icalfile.close()
 
-stuff = (uuid, scheduled, duration, description, annotation)
+stuff = (uuid, scheduled, duration, description, annotation, dtstamp)
 print(stuff)
 
 conn = psycopg2.connect("dbname=j user=j")
@@ -47,10 +48,12 @@ cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
 # Depending on $1, insert or update into DB
 if action == 'insert':
-    cur.execute("PREPARE INS_FROM_CAL_IMPORT AS INSERT INTO tasks (uuid, scheduled, duration, description, annotation) VALUES($1, $2, $3, $4, $5)")
-    cur.execute("EXECUTE INS_FROM_CAL_IMPORT (%s, %s, %s, %s, %s)", stuff)
+    cur.execute("PREPARE INS_FROM_CAL_IMPORT AS INSERT INTO tasks (uuid, scheduled, duration, description, annotation, entry, modified) VALUES($1, $2, $3, $4, $5, $6, $6)")
+    cur.execute("EXECUTE INS_FROM_CAL_IMPORT (%s, %s, %s, %s, %s, %s)", stuff)
 else:
-    cur.execute("PREPARE UPD_FROM_CAL_IMPORT AS UPDATE tasks SET scheduled = $2, duration = $3, description = $4, annotation = $5 WHERE uuid = $1")
-    cur.execute("EXECUTE UPD_FROM_CAL_IMPORT (%s, %s, %s, %s, %s)", stuff)
+    # This won't modify a row if it has modification time later than imported object.
+    cur.execute("PREPARE UPD_FROM_CAL_IMPORT AS UPDATE tasks SET scheduled = $2, duration = $3, description = $4, annotation = $5, modified = $6 WHERE uuid = $1 AND modified < $6")
+    cur.execute("EXECUTE UPD_FROM_CAL_IMPORT (%s, %s, %s, %s, %s, %s)", stuff)
+    print('Rows updated: %d' % cur.rowcount)
 
 conn.commit()
