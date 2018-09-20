@@ -1,7 +1,14 @@
-MYDIR=$(dirname $0)
+MYDIR=$(readlink -f $(dirname $0))
 
 CAL_UUID="fb9ed04e-572b-477f-bdad-d6dbb32c0d82"
 CAL_BASEDIR="$HOME/.calendars"
+
+pushd "$CAL_BASEDIR/$CAL_UUID/" || exit 1
+
+if [[ -d .git ]]; then
+	git add .
+	git commit --all -m "Orphan changes before us refilling the dir from DB"
+fi
 
 # Remove all files.
 # This is the simplest way to not leave obsolete (completed, cancelled, deleted) events stuck in the calendar.
@@ -11,10 +18,22 @@ rm "$CAL_BASEDIR/$CAL_UUID/"*
 # TODO Trigger doing specific re-exports
 "$MYDIR"/taskdb_cal_export_all > /dev/null
 
+if [[ -d .git ]]; then
+	git add .
+	git commit --all -m "Changes after us refilling the dir from DB"
+fi
+
 SYNC_LOG_FILE="/home/j/.taskdb/vdirsyncer.out"
 vdirsyncer sync "fastmail_calendar/$CAL_UUID" > "$SYNC_LOG_FILE"
 VS_RET=$?
 cat "$SYNC_LOG_FILE"
+
+if [[ -d .git ]]; then
+	git add .
+	(echo -e "Changes after 'vdirsyncer sync'\n";
+	 cat "$SYNC_LOG_FILE"
+	) | git commit --all --file=-
+fi
 
 # Look for lines like
 # "Copying (updating) item 2bb6df40-0af5-4f76-acf0-d3fae801dca1 to fastmail_calendar_local/fb9ed04e-572b-477f-bdad-d6dbb32c0d82"
@@ -35,3 +54,7 @@ for uuid in $UUIDS; do
 	"$MYDIR/taskdb_cal_import" insert "$uuid"
 	sleep 2 # to allow taskdb_listen_changes to pick up individual task changes not mixed together
 done
+
+if [[ -d .git ]]; then
+	git push
+fi
