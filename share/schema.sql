@@ -81,7 +81,7 @@ CREATE FUNCTION public.update_ended_fn() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
- IF NEW.status in ('completed', 'deleted', 'cancelled') THEN
+ IF NEW.status in ('completed', 'deleted', 'cancelled') and (TG_OP = 'INSERT' or OLD.status != NEW.status) THEN
   NEW.ended := CURRENT_TIMESTAMP;
  END IF;
  RETURN NEW;
