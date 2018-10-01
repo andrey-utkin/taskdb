@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 10.3
--- Dumped by pg_dump version 10.3
+-- Dumped by pg_dump version 10.5
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -112,23 +112,21 @@ SET default_with_oids = false;
 --
 
 CREATE TABLE public.tasks (
-    uuid uuid DEFAULT public.uuid_generate_v4() NOT NULL,
-    status public.task_status DEFAULT 'pending'::public.task_status NOT NULL,
-    project text,
-    tags text,
-    description text,
-    entry timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    modified timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    started timestamp with time zone,
-    ended timestamp with time zone,
     scheduled timestamp with time zone,
-    due timestamp with time zone,
-    recur text,
+    description text,
     annotation text,
+    project text,
+    priority character varying(1),
+    due timestamp with time zone,
+    duration text,
+    tags text,
     parent uuid,
     dependencies text,
-    duration text,
-    priority character varying(1)
+    entry timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    modified timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    ended timestamp with time zone,
+    status public.task_status DEFAULT 'pending'::public.task_status NOT NULL,
+    uuid uuid DEFAULT public.uuid_generate_v4() NOT NULL
 );
 
 
@@ -137,23 +135,21 @@ CREATE TABLE public.tasks (
 --
 
 CREATE VIEW public.tdt AS
- SELECT tasks.uuid,
-    tasks.status,
-    tasks.project,
-    tasks.tags,
+ SELECT tasks.scheduled,
     tasks.description,
-    tasks.entry,
-    tasks.modified,
-    tasks.started,
-    tasks.ended,
-    tasks.scheduled,
-    tasks.due,
-    tasks.recur,
     tasks.annotation,
+    tasks.project,
+    tasks.priority,
+    tasks.due,
+    tasks.duration,
+    tasks.tags,
     tasks.parent,
     tasks.dependencies,
-    tasks.duration,
-    tasks.priority
+    tasks.entry,
+    tasks.modified,
+    tasks.ended,
+    tasks.status,
+    tasks.uuid
    FROM public.tasks
   WHERE ((tasks.status = 'pending'::public.task_status) AND ((tasks.scheduled < (CURRENT_DATE + '24:00:00'::interval)) OR (tasks.due < (CURRENT_DATE + '24:00:00'::interval))))
   ORDER BY tasks.scheduled, tasks.due;
@@ -176,23 +172,21 @@ CREATE VIEW public.tdt_report AS
 --
 
 CREATE VIEW public.tdtw AS
- SELECT tdt.uuid,
-    tdt.status,
-    tdt.project,
-    tdt.tags,
+ SELECT tdt.scheduled,
     tdt.description,
-    tdt.entry,
-    tdt.modified,
-    tdt.started,
-    tdt.ended,
-    tdt.scheduled,
-    tdt.due,
-    tdt.recur,
     tdt.annotation,
+    tdt.project,
+    tdt.priority,
+    tdt.due,
+    tdt.duration,
+    tdt.tags,
     tdt.parent,
     tdt.dependencies,
-    tdt.duration,
-    tdt.priority
+    tdt.entry,
+    tdt.modified,
+    tdt.ended,
+    tdt.status,
+    tdt.uuid
    FROM public.tdt
   WHERE (tdt.project = 'undo'::text);
 
