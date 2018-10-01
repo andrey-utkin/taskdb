@@ -1,6 +1,6 @@
 set -e
 MYPATH=$(readlink -f $(dirname $0))
 pushd ~/.taskdb/dump.git
-"$MYPATH"/taskdb_dump_data > data.sql
+"$MYPATH"/taskdb_dump_all > data.sql
 git commit --file=- --all
 git push || true
