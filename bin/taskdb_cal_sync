@@ -3,7 +3,7 @@ MYDIR=$(readlink -f $(dirname $0))
 CAL_UUID="fb9ed04e-572b-477f-bdad-d6dbb32c0d82"
 CAL_BASEDIR="$HOME/.calendars"
 
-pushd "$CAL_BASEDIR/$CAL_UUID/" || exit 1
+pushd "$CAL_BASEDIR/$CAL_UUID/" > /dev/null || exit 1
 
 if [[ -d .git ]]; then
 	git add .
