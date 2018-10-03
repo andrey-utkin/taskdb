@@ -7,7 +7,7 @@ pushd "$CAL_BASEDIR/$CAL_UUID/" > /dev/null || exit 1
 
 if [[ -d .git ]]; then
 	git add .
-	git commit --all -m "Orphan changes before us refilling the dir from DB"
+	git commit --quiet --all -m "Orphan changes before us refilling the dir from DB"
 fi
 
 # Remove all files.
@@ -20,7 +20,7 @@ rm "$CAL_BASEDIR/$CAL_UUID/"*
 
 if [[ -d .git ]]; then
 	git add .
-	git commit --all -m "Changes after us refilling the dir from DB"
+	git commit --quiet --all -m "Changes after us refilling the dir from DB"
 fi
 
 SYNC_LOG_FILE="/home/j/.taskdb/vdirsyncer.out"
@@ -56,5 +56,5 @@ for uuid in $UUIDS; do
 done
 
 if [[ -d .git ]]; then
-	git push
+	git push --quiet
 fi
