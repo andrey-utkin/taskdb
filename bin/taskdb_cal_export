@@ -36,11 +36,21 @@ if row['annotation']:
     event.add('description', row['annotation'])
 
 assert row['scheduled']
-event.add('dtstart', row['scheduled'])
+
+# Workaround for interoperability bug
+# See https://github.com/collective/icalendar/issues/272
+# This format is not interpreted correctly by other client apps, they assume
+# a floating timezone:
+# DTSTART;TZID=+00;VALUE=DATE-TIME:20181005T210000
+# This one is interpreted correctly:
+# DTSTART;VALUE=DATE-TIME:20181005T210000Z
+scheduled_utc = row['scheduled'].astimezone(pytz.utc)
+
+event.add('dtstart', scheduled_utc)
 
 if row['duration'] and row['duration'] != '':
     dtend = row['scheduled'] + timedelta(seconds=int(row['duration']))
-    event.add('dtend', dtend)
+    event.add('dtend', dtend.astimezone(pytz.utc))
 
 event.add('dtstamp', row['modified'])
 
