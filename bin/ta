@@ -2,6 +2,7 @@
 
 """Add new task to DB"""
 
+import pathlib
 import sys
 import psycopg2
 import psycopg2.extras
@@ -20,3 +21,7 @@ cur.execute("EXECUTE INS_FROM_TA (%s, %s)", (description, project))
 conn.commit()
 row = cur.fetchone()
 print(row['uuid'])
+
+LAST_UUID_FILE_PATH = str(pathlib.Path.home()) + '/.taskdb/last_uuid'
+with open(LAST_UUID_FILE_PATH, 'w') as f:
+    f.write(row['uuid'])
