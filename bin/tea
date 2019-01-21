@@ -3,12 +3,19 @@
 """Edit task annotation"""
 
 import os
+import pathlib
 import sys
 import subprocess
 import psycopg2
 import psycopg2.extras
 
-uuid = sys.argv[1]
+if len(sys.argv) >= 2:
+    uuid = sys.argv[1]
+else:
+    LAST_UUID_FILE_PATH = str(pathlib.Path.home()) + '/.taskdb/last_uuid'
+    with open(LAST_UUID_FILE_PATH, 'r') as f:
+        uuid = f.read()
+        uuid = uuid.strip()
 
 conn = psycopg2.connect("dbname=j user=j")
 cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
