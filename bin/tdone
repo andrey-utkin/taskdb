@@ -2,5 +2,9 @@
 # TODO Accept UUID or short number of record from last query from same terminal
 
 UUID="$1"
+
+if [[ -z "$UUID" ]]; then
+	UUID=$(cat ~/.taskdb/last_uuid)
+fi
 # TODO must use prepared statements
 echo "UPDATE tasks SET status = 'completed' WHERE uuid = '$UUID';" | psql
