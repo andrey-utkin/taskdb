@@ -118,7 +118,7 @@ CREATE TABLE public.tasks (
     project text,
     priority character varying(1),
     due timestamp with time zone,
-    duration text,
+    duration integer,
     tags text,
     parent uuid,
     dependencies text,
