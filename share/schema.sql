@@ -151,7 +151,7 @@ CREATE VIEW public.tdt AS
     tasks.status,
     tasks.uuid
    FROM public.tasks
-  WHERE ((tasks.status = 'pending'::public.task_status) AND ((tasks.scheduled < (CURRENT_TIMESTAMP + '24:00:00'::interval)) OR (tasks.due < (CURRENT_TIMESTAMP + '24:00:00'::interval))))
+  WHERE ((tasks.status = 'pending'::public.task_status) AND ((tasks.scheduled < (CURRENT_DATE + '24:00:00'::interval)) OR (tasks.due < (CURRENT_DATE + '24:00:00'::interval))))
   ORDER BY tasks.scheduled, tasks.due;
 
 
