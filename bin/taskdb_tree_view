@@ -93,7 +93,7 @@ def print_tree(tree, depth=0):
                 ) +
             '[ %s]' % status_str(row['status']) +
             ' %s' % row['scheduled'].strftime('%m-%d %H:%M') +
-            ' %dh' % (int(row['duration']) // 3600) +
+            ' %dh' % (int(row['duration'] or 0) // 3600) +
             ''
             )
 
