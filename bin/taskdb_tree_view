@@ -136,7 +136,7 @@ def tree_validate_scheduled(tree):
             print("{uuid} ({description}) is scheduled for earlier than its subtask:".format(**tree['node']))
             print("{uuid} ({description})".format(**subtask['node']))
 
-        tree_validate_duration(subtask)
+        tree_validate_scheduled(subtask)
 
 def tree_validate_dod(tree, codename):
     """
