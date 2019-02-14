@@ -108,13 +108,27 @@ def tree_search(tree, uuid):
         if res:
             return res
 
+def tree_validate_duration(tree):
+    has_childs = not not tree['children']
+    has_duration = not not tree['node']['duration']
+    if has_childs and has_duration:
+        print("{uuid} ({description}) has subtasks, but also has duration set to {duration}, unset the duration!".format(**tree['node']))
+    if not has_childs and not has_duration:
+        print("{uuid} ({description}) has no subtasks, and has duration unset, set the duration!".format(**tree['node']))
+
+    for subtree in tree['children']:
+        tree_validate_duration(subtree)
+
 def tree_validate(tree, codename):
+    # Ensure no orphan subtasks
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cur.execute("EXECUTE SEL_ALL_BY_CODENAME_FROM_TREE_EDIT (%s)", (codename,))
     rows = cur.fetchall()
     for row in rows:
         if tree_search(tree, row['uuid']) is None:
             print("{uuid} ({description}) has codename in descrption, but is not linked; parent is {parent}".format(**row))
+
+    tree_validate_duration(tree)
 
 tree = dict()
 
