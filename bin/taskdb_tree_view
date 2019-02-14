@@ -37,13 +37,22 @@ from pprint import pprint
 
 
 TOP_UUID = sys.argv[1]
+TOP_CODENAME = sys.argv[2] if len(sys.argv) > 2 else None
 
 conn = psycopg2.connect("dbname=j user=j")
 cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 cur.execute("PREPARE SEL_BY_UUID_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE uuid = $1");
-#cur.execute("PREPARE SEL_BY_PARENT_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE parent = $1 ORDER BY scheduled");
+cur.execute("PREPARE SEL_TOP_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1 || ' .*[(]TOP[)]$')) AND parent IS NULL");
+cur.execute("PREPARE SEL_ALL_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1 || ' '))");
+cur.execute("PREPARE SEL_BY_PARENT_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE parent = $1 ORDER BY scheduled");
 # Pending only:
-cur.execute("PREPARE SEL_BY_PARENT_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE parent = $1 AND status = 'pending' ORDER BY scheduled");
+#cur.execute("PREPARE SEL_BY_PARENT_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE parent = $1 AND status = 'pending' ORDER BY scheduled");
+
+def get_top_by_codename(codename):
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("EXECUTE SEL_TOP_BY_CODENAME_FROM_TREE_EDIT (%s)", (codename,))
+    row = cur.fetchone()
+    return row
 
 def get_by_uuid(uuid):
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -78,21 +87,46 @@ def status_str(row_status):
 def print_tree(tree, depth=0):
     row = tree['node']
     print(
-            '*' * (depth + 1) +
-            ' ' +
-            '[%s]' % status_str(row['status']) +
+            '%-40s' % (
+                '*' * (depth + 1) + ' ' +
+                row['description']
+                ) +
+            '[ %s]' % status_str(row['status']) +
             ' %s' % row['scheduled'].strftime('%m-%d %H:%M') +
             ' %dh' % (int(row['duration']) // 3600) +
-            ' ' + row['description'] +
             ''
             )
 
     for child in tree['children']:
         print_tree(child, depth + 1)
 
+def tree_search(tree, uuid):
+    if tree['node']['uuid'] == uuid:
+        return tree['node']
+    for subtree in tree['children']:
+        res = tree_search(subtree, uuid)
+        if res:
+            return res
+
+def tree_validate(tree, codename):
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("EXECUTE SEL_ALL_BY_CODENAME_FROM_TREE_EDIT (%s)", (codename,))
+    rows = cur.fetchall()
+    for row in rows:
+        if tree_search(tree, row['uuid']) is None:
+            print("{uuid} ({description}) has codename in descrption, but is not linked; parent is {parent}".format(**row))
+
 tree = dict()
-top_task = get_by_uuid(TOP_UUID)
+
+if TOP_CODENAME:
+    top_task = get_top_by_codename(TOP_CODENAME)
+    TOP_UUID = top_task['uuid']
+else:
+    top_task = get_by_uuid(TOP_UUID)
+    # TODO extract TOP_CODENAME
+
 tree['node'] = top_task
 tree['children'] = get_children_recursively(TOP_UUID)
 
 print_tree(tree)
+tree_validate(tree, TOP_CODENAME)
