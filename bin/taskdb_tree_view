@@ -131,12 +131,26 @@ def tree_validate_scheduled(tree):
     if not tree['node']['scheduled']:
             print("{uuid} ({description}) is not scheduled!".format(**tree['node']))
 
+    last_subtask_ends_at = None
+    last_subtask = None
+
     for subtask in tree['children']:
         if tree['node']['scheduled'] < subtask['node']['scheduled']:
             print("{uuid} ({description}) is scheduled for earlier than its subtask:".format(**tree['node']))
-            print("{uuid} ({description})".format(**subtask['node']))
+            print("    {uuid} ({description})".format(**subtask['node']))
 
         tree_validate_scheduled(subtask)
+
+        subtask_ends_at = subtask['node']['scheduled']
+        if subtask['node']['duration']:
+            subtask_ends_at += timedelta(seconds=subtask['node']['duration'])
+        if not last_subtask_ends_at or subtask_ends_at > last_subtask_ends_at:
+            last_subtask_ends_at = subtask_ends_at
+            last_subtask = subtask['node']
+
+    if last_subtask_ends_at and tree['node']['scheduled'] > last_subtask_ends_at:
+        print("{uuid} ({description}) is scheduled for {scheduled}, later than its last subtask is completed:".format(**tree['node']))
+        print("    {uuid} ({description}) ends at {ends_at}".format(**subtask['node'], ends_at=last_subtask_ends_at))
 
 def tree_validate_dod(tree, codename):
     """
