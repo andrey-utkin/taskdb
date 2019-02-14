@@ -127,6 +127,17 @@ def tree_validate_duration(tree):
     for subtree in tree['children']:
         tree_validate_duration(subtree)
 
+def tree_validate_scheduled(tree):
+    if not tree['node']['scheduled']:
+            print("{uuid} ({description}) is not scheduled!".format(**tree['node']))
+
+    for subtask in tree['children']:
+        if tree['node']['scheduled'] < subtask['node']['scheduled']:
+            print("{uuid} ({description}) is scheduled for earlier than its subtask:".format(**tree['node']))
+            print("{uuid} ({description})".format(**subtask['node']))
+
+        tree_validate_duration(subtask)
+
 def tree_validate_dod(tree, codename):
     """
     Check that task tree includes all sensible items from Definition of Done.
@@ -163,6 +174,7 @@ def tree_validate(tree, codename):
             print("{uuid} ({description}) has codename in descrption, but is not linked; parent is {parent}".format(**row))
 
     tree_validate_duration(tree)
+    tree_validate_scheduled(tree)
     tree_validate_dod(tree, codename)
 
 tree = dict()
