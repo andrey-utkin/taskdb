@@ -136,8 +136,8 @@ def tree_validate_scheduled(tree):
 
     for subtask in tree['children']:
         if tree['node']['scheduled'] < subtask['node']['scheduled']:
-            print("{uuid} ({description}) is scheduled for earlier than its subtask:".format(**tree['node']))
-            print("    {uuid} ({description})".format(**subtask['node']))
+            print("{uuid} ({description}) is scheduled for {scheduled}, earlier than its subtask:".format(**tree['node']))
+            print("    {uuid} ({description}) {scheduled}".format(**subtask['node']))
 
         tree_validate_scheduled(subtask)
 
