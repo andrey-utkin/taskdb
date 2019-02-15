@@ -127,6 +127,23 @@ def tree_validate_duration(tree):
     for subtree in tree['children']:
         tree_validate_duration(subtree)
 
+def tree_validate_status(tree):
+    if not tree['children']:
+        return
+
+    can_have_pending_subtasks = tree['node']['status'] == 'pending'
+    has_any_pending_subtasks = False
+
+    for subtree in tree['children']:
+        if subtree['node']['status'] == 'pending':
+            has_any_pending_subtasks = True
+        tree_validate_status(subtree)
+
+    if has_any_pending_subtasks and not can_have_pending_subtasks:
+        print("{uuid} ({description}) is not in pending status, but has pending subtasks".format(**tree['node']))
+    if can_have_pending_subtasks and not has_any_pending_subtasks:
+        print("{uuid} ({description}) is in pending status, but has no pending subtasks".format(**tree['node']))
+
 def tree_validate_scheduled(tree):
     if not tree['node']['scheduled']:
             print("{uuid} ({description}) is not scheduled!".format(**tree['node']))
@@ -189,6 +206,7 @@ def tree_validate(tree, codename):
 
     tree_validate_duration(tree)
     tree_validate_scheduled(tree)
+    tree_validate_status(tree)
     tree_validate_dod(tree, codename)
 
 tree = dict()
