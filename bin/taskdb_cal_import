@@ -32,9 +32,12 @@ for component in cal.walk():
         #location = component.get('location')
         scheduled = component.get('dtstart').dt
         dtend = component.get('dtend')
+        duration_component = component.get('duration')
         duration = None
         if dtend:
             duration = int((dtend.dt - scheduled).total_seconds())
+        elif duration_component:
+            duration = int(duration_component.dt.total_seconds())
         dtstamp = component.get('dtstamp').dt
         break
 
