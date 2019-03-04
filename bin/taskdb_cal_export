@@ -8,7 +8,7 @@ import psycopg2
 import psycopg2.extras
 from datetime import datetime, timedelta
 import pytz
-from icalendar import Calendar, Event
+from icalendar import Calendar, Event, Alarm
 from icalendar import vCalAddress, vText
 
 
@@ -55,6 +55,12 @@ if row['duration'] and row['duration'] != '':
 event.add('dtstamp', row['modified'])
 
 event['uid'] = row['uuid']
+
+alarm = Alarm()
+alarm['description'] = row['description']
+alarm['trigger'] = '-PT10M'
+alarm['action'] = 'DISPLAY'
+event.add_component(alarm)
 
 cal.add_component(event)
 
