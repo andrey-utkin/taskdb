@@ -10,13 +10,7 @@ if [[ -d .git ]]; then
 	git commit --quiet --all -m "Orphan changes before us refilling the dir from DB"
 fi
 
-# Remove all files.
-# This is the simplest way to not leave obsolete (completed, cancelled, deleted) events stuck in the calendar.
-rm "$CAL_BASEDIR/$CAL_UUID/"*
-
-# Excessive, but harmless.
-# TODO Trigger doing specific re-exports
-"$MYDIR"/taskdb_cal_export_all > /dev/null
+"$MYDIR"/taskdb_cal_export_all
 
 if [[ -d .git ]]; then
 	git add .

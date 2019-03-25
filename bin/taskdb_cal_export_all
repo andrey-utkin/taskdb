@@ -5,23 +5,59 @@ import subprocess
 from pprint import pprint
 import psycopg2
 import psycopg2.extras
+from datetime import datetime
+import icalendar
 
 mydir = os.path.dirname(__file__)
 mydir = os.path.abspath(mydir)
 mydir += '/'
+cal_path = '/home/j/.calendars/fb9ed04e-572b-477f-bdad-d6dbb32c0d82'
+
+def existing_file_uptodate(row):
+    filepath = os.path.join(cal_path, row['uuid'] + '.ics')
+    if not os.path.exists(filepath):
+        return False
+    icalfile = open(filepath, 'rb')
+    cal = icalendar.Calendar.from_ical(icalfile.read())
+    for component in cal.walk():
+        if component.name == "VEVENT":
+            dtstamp = component.get('dtstamp').dt
+            break
+
+    rounded_modified = row['modified'].replace(microsecond=0)
+
+    return dtstamp == rounded_modified
 
 conn = psycopg2.connect("dbname=j user=j")
 cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-cur.execute("SELECT uuid FROM tasks WHERE ((tasks.status = 'pending'::public.task_status) AND (tasks.scheduled IS NOT NULL));")
+cur.execute("SELECT uuid, modified FROM tasks WHERE ((tasks.status = 'pending'::public.task_status) AND (tasks.scheduled IS NOT NULL));")
 
-while True:
-    row = cur.fetchone()
-    if not row:
-        break
+rows = cur.fetchall()
+for row in rows:
+    if existing_file_uptodate(row):
+        continue
     pprint(row)
     child = subprocess.Popen(['/usr/bin/python3', mydir + 'taskdb_cal_export', row['uuid']])
     child.wait()
 
 cur.close()
 conn.close()
+
+# Delete files for entries which are no longer in the list.
+stale_files = []
+with os.scandir(cal_path) as it:
+    for entry in it:
+        if not entry.name.endswith('.ics'):
+            continue
+        found = False
+        for row in rows:
+            if entry.name.startswith(row['uuid']):
+                found = True
+                break
+        if not found:
+            stale_files.append(entry.name)
+
+for stale in stale_files:
+    print('Removind stale file {}'.format(stale))
+    os.unlink(os.path.join(cal_path, stale))
