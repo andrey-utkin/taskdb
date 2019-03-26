@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import icalendar
+import shutil
+
+def get_dtstamp(filepath):
+    if not os.path.exists(filepath):
+        return None
+    icalfile = open(filepath, 'rb')
+    cal = icalendar.Calendar.from_ical(icalfile.read())
+    for component in cal.walk():
+        if component.name == "VEVENT":
+            return component.get('dtstamp').dt
+    return None
+
+A_FILEPATH = sys.argv[1]
+B_FILEPATH = sys.argv[2]
+
+a_dtstamp = get_dtstamp(A_FILEPATH)
+b_dtstamp = get_dtstamp(B_FILEPATH)
+
+if a_dtstamp > b_dtstamp:
+    newer = A_FILEPATH
+    older = B_FILEPATH
+else:
+    newer = B_FILEPATH
+    older = A_FILEPATH
+
+shutil.copyfile(newer, older)
