@@ -44,7 +44,26 @@ cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 cur.execute("PREPARE SEL_BY_UUID_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE uuid = $1 AND status != 'deleted'");
 cur.execute("PREPARE SEL_TOP_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1 || ' .*[(]TOP[)]$')) AND parent IS NULL AND status != 'deleted'");
 cur.execute("PREPARE SEL_ALL_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1 || ' ')) AND status != 'deleted'");
-cur.execute("PREPARE SEL_BY_PARENT_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE parent = $1 AND status != 'deleted' ORDER BY scheduled");
+cur.execute("""
+PREPARE SEL_BY_PARENT_FROM_TREE_EDIT AS
+SELECT * FROM tasks
+WHERE
+(
+ parent = $1
+ OR
+ (
+  uuid::text IN
+   (
+   SELECT UNNEST(STRING_TO_ARRAY(dependencies, '\n'))
+   FROM tasks
+   WHERE uuid=$1
+   )
+ )
+)
+AND
+status != 'deleted'
+ORDER BY scheduled
+""");
 # Pending only:
 #cur.execute("PREPARE SEL_BY_PARENT_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE parent = $1 AND status = 'pending' ORDER BY scheduled");
 
