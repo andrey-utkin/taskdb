@@ -51,7 +51,7 @@ if row['duration'] and row['duration'] != '':
     dtend = row['scheduled'] + timedelta(seconds=int(row['duration']))
     event.add('dtend', dtend.astimezone(tz))
 
-event.add('dtstamp', row['modified'])
+event.add('dtstamp', row['modified'].astimezone(pytz.utc))
 
 event['uid'] = row['uuid']
 
