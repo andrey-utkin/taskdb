@@ -37,20 +37,19 @@ if row['annotation']:
 
 assert row['scheduled']
 
-# Workaround for interoperability bug
-# See https://github.com/collective/icalendar/issues/272
-# This format is not interpreted correctly by other client apps, they assume
-# a floating timezone:
-# DTSTART;TZID=+00;VALUE=DATE-TIME:20181005T210000
-# This one is interpreted correctly:
-# DTSTART;VALUE=DATE-TIME:20181005T210000Z
-scheduled_utc = row['scheduled'].astimezone(pytz.utc)
+# Produce local timezone dates in calendar entry.
+# Otherwise editing the event in apps is a pain:
+# user picks time, but it's UTC time.
+with open('/etc/timezone', 'r') as tzfile:
+    tzname = tzfile.read().strip()
+tz = pytz.timezone(tzname)
+scheduled_in_tz = row['scheduled'].astimezone(tz)
 
-event.add('dtstart', scheduled_utc)
+event.add('dtstart', scheduled_in_tz)
 
 if row['duration'] and row['duration'] != '':
     dtend = row['scheduled'] + timedelta(seconds=int(row['duration']))
-    event.add('dtend', dtend.astimezone(pytz.utc))
+    event.add('dtend', dtend.astimezone(tz))
 
 event.add('dtstamp', row['modified'])
 
