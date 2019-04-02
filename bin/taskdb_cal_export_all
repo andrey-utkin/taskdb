@@ -37,7 +37,6 @@ rows = cur.fetchall()
 for row in rows:
     if existing_file_uptodate(row):
         continue
-    pprint(row)
     child = subprocess.Popen(['/usr/bin/python3', mydir + 'taskdb_cal_export', row['uuid']])
     child.wait()
 
