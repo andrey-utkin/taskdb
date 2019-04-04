@@ -117,6 +117,48 @@ CREATE TABLE public.tasks (
 
 
 --
+-- Name: conflicting; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.conflicting AS
+ SELECT t.scheduled,
+    t.description,
+    t.annotation,
+    t.project,
+    t.priority,
+    t.due,
+    t.duration,
+    t.tags,
+    t.parent,
+    t.dependencies,
+    t.entry,
+    t.modified,
+    t.ended,
+    t.status,
+    t.uuid
+   FROM public.tasks t
+  WHERE ((t.scheduled IS NOT NULL) AND (t.status = 'pending'::public.task_status) AND (t.duration > 0) AND (EXISTS ( SELECT another_task.scheduled,
+            another_task.description,
+            another_task.annotation,
+            another_task.project,
+            another_task.priority,
+            another_task.due,
+            another_task.duration,
+            another_task.tags,
+            another_task.parent,
+            another_task.dependencies,
+            another_task.entry,
+            another_task.modified,
+            another_task.ended,
+            another_task.status,
+            another_task.uuid
+           FROM public.tasks another_task
+          WHERE ((another_task.uuid <> t.uuid) AND (another_task.status = 'pending'::public.task_status) AND (another_task.duration > 0) AND (t.scheduled < (another_task.scheduled + ((another_task.duration)::double precision * '00:00:01'::interval))) AND ((t.scheduled + ((t.duration)::double precision * '00:00:01'::interval)) > another_task.scheduled))
+         LIMIT 1)))
+  ORDER BY t.scheduled;
+
+
+--
 -- Name: megatasks; Type: VIEW; Schema: public; Owner: -
 --
 
