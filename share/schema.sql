@@ -175,6 +175,30 @@ CREATE VIEW public.megatasks AS
 
 
 --
+-- Name: overdue; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.overdue AS
+ SELECT tasks.scheduled,
+    tasks.description,
+    tasks.annotation,
+    tasks.project,
+    tasks.priority,
+    tasks.due,
+    tasks.duration,
+    tasks.tags,
+    tasks.parent,
+    tasks.dependencies,
+    tasks.entry,
+    tasks.modified,
+    tasks.ended,
+    tasks.status,
+    tasks.uuid
+   FROM public.tasks
+  WHERE ((tasks.status = 'pending'::public.task_status) AND (((tasks.scheduled + ((COALESCE(tasks.duration, 0))::double precision * '00:00:01'::interval)) < CURRENT_TIMESTAMP) OR (tasks.due < CURRENT_TIMESTAMP)));
+
+
+--
 -- Name: tdt; Type: VIEW; Schema: public; Owner: -
 --
 
