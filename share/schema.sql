@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 10.5
--- Dumped by pg_dump version 10.5
+-- Dumped from database version 11.1
+-- Dumped by pg_dump version 11.1
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -14,20 +14,6 @@ SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET row_security = off;
-
---
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
 
 --
 -- Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner: -
@@ -128,6 +114,64 @@ CREATE TABLE public.tasks (
     status public.task_status DEFAULT 'pending'::public.task_status NOT NULL,
     uuid uuid DEFAULT public.uuid_generate_v4() NOT NULL
 );
+
+
+--
+-- Name: megatasks; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.megatasks AS
+ SELECT megatask.scheduled,
+    megatask.description,
+    megatask.annotation,
+    megatask.project,
+    megatask.priority,
+    megatask.due,
+    megatask.duration,
+    megatask.tags,
+    megatask.parent,
+    megatask.dependencies,
+    megatask.entry,
+    megatask.modified,
+    megatask.ended,
+    megatask.status,
+    megatask.uuid
+   FROM public.tasks megatask
+  WHERE ((megatask.status = 'pending'::public.task_status) AND (megatask.scheduled IS NOT NULL) AND (megatask.parent IS NULL) AND ((EXISTS ( SELECT child.scheduled,
+            child.description,
+            child.annotation,
+            child.project,
+            child.priority,
+            child.due,
+            child.duration,
+            child.tags,
+            child.parent,
+            child.dependencies,
+            child.entry,
+            child.modified,
+            child.ended,
+            child.status,
+            child.uuid
+           FROM public.tasks child
+          WHERE (child.parent = megatask.uuid))) OR ((megatask.dependencies IS NOT NULL) AND (NOT (EXISTS ( SELECT rdep.scheduled,
+            rdep.description,
+            rdep.annotation,
+            rdep.project,
+            rdep.priority,
+            rdep.due,
+            rdep.duration,
+            rdep.tags,
+            rdep.parent,
+            rdep.dependencies,
+            rdep.entry,
+            rdep.modified,
+            rdep.ended,
+            rdep.status,
+            rdep.uuid
+           FROM public.tasks rdep
+          WHERE ((megatask.uuid)::text = ANY (string_to_array(rdep.dependencies, '
+'::text)))))))))
+  ORDER BY megatask.scheduled;
 
 
 --
