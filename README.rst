@@ -45,7 +45,9 @@ Design ideas
         * Most important taskdb feature for me currently is bidirectional sync with CalDAV. To have it, *and not implement it*, taskdb shells out to ``vdirsyncer``.
 * **Enable usage of available commoditized tools**, don't require building specialized toolkit, or huge monolith, from scratch. The Unix way.
     * SQL UI.
-        * Variety of readily available PostgreSQL UIs (I use OmniDB) is a great bonus, but not a coincidence.
+        * Variety of readily available SQL UI products is a great bonus, but not a coincidence. I use:
+            * OmniDB - great WYSIWYG interface to view and edit SQL databases
+            * Grafana - gives dashboards with various views of information, e.g. plots, charts, tables. Define your metrics and watch how you perform towards them over time!
     * Calendar UI.
         * I haven't planned to lean heavily on it at initial design phase, but it quickly proved to be the biggest game changer.
         * Visualisation of time as space, Drag & Drop are amazing things! I would never implement that as well as some established solutions do.
