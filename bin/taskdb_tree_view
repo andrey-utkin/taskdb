@@ -175,6 +175,15 @@ def tree_validate_scheduled(tree):
             print("{uuid} ({description}) is scheduled for {scheduled}, earlier than its subtask:".format(**tree['node']))
             print("    {uuid} ({description}) {scheduled}".format(**subtask['node']))
 
+        if subtask['node']['duration']:
+            subtask_duration = timedelta(seconds=subtask['node']['duration'])
+        else:
+            subtask_duration = timedelta(seconds=0)
+
+        if tree['node']['scheduled'] < subtask['node']['scheduled'] + subtask_duration:
+            print("{uuid} ({description}) is scheduled for {scheduled}, earlier than its subtask completes:".format(**tree['node']))
+            print("    {uuid} ({description}) {scheduled}".format(**subtask['node']))
+
         tree_validate_scheduled(subtask)
 
         subtask_ends_at = subtask['node']['scheduled']
