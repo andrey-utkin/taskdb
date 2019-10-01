@@ -181,7 +181,7 @@ CREATE VIEW public.megatasks AS
     megatask.status,
     megatask.uuid
    FROM public.tasks megatask
-  WHERE ((megatask.status = 'pending'::public.task_status) AND (megatask.scheduled IS NOT NULL) AND (megatask.parent IS NULL) AND ((EXISTS ( SELECT child.scheduled,
+  WHERE ((megatask.status = 'pending'::public.task_status) AND (megatask.parent IS NULL) AND ((EXISTS ( SELECT child.scheduled,
             child.description,
             child.annotation,
             child.project,
