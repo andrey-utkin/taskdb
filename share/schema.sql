@@ -104,7 +104,7 @@ CREATE TABLE public.tasks (
     description text,
     annotation text,
     project text,
-    priority character varying(1),
+    priority text,
     due timestamp with time zone,
     duration integer,
     tags text,
@@ -239,7 +239,8 @@ CREATE VIEW public.overdue AS
     tasks.status,
     tasks.uuid
    FROM public.tasks
-  WHERE ((tasks.status = 'pending'::public.task_status) AND (((tasks.scheduled + ((COALESCE(tasks.duration, 0))::double precision * '00:00:01'::interval)) < CURRENT_TIMESTAMP) OR (tasks.due < CURRENT_TIMESTAMP)));
+  WHERE ((tasks.status = 'pending'::public.task_status) AND (((tasks.scheduled + ((COALESCE(tasks.duration, 0))::double precision * '00:00:01'::interval)) < CURRENT_TIMESTAMP) OR (tasks.due < CURRENT_TIMESTAMP)))
+  ORDER BY tasks.scheduled;
 
 
 --
