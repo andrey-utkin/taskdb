@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.1
--- Dumped by pg_dump version 11.1
+-- Dumped from database version 11.4
+-- Dumped by pg_dump version 11.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -394,6 +394,83 @@ CREATE TRIGGER update_modified_trigger BEFORE INSERT OR UPDATE ON public.tasks F
 
 ALTER TABLE ONLY public.tasks
     ADD CONSTRAINT tasks_parent_fkey FOREIGN KEY (parent) REFERENCES public.tasks(uuid) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: TABLE tasks; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.tasks TO taskdb_grafana;
+
+
+--
+-- Name: TABLE conflicting; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.conflicting TO taskdb_grafana;
+
+
+--
+-- Name: TABLE megatasks; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.megatasks TO taskdb_grafana;
+
+
+--
+-- Name: TABLE overdue; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.overdue TO taskdb_grafana;
+
+
+--
+-- Name: TABLE tdt; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.tdt TO taskdb_grafana;
+
+
+--
+-- Name: TABLE tdt_report; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.tdt_report TO taskdb_grafana;
+
+
+--
+-- Name: TABLE tdtnw; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.tdtnw TO taskdb_grafana;
+
+
+--
+-- Name: TABLE tdtnw_report; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.tdtnw_report TO taskdb_grafana;
+
+
+--
+-- Name: TABLE tdtw; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.tdtw TO taskdb_grafana;
+
+
+--
+-- Name: TABLE tdtw_report; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.tdtw_report TO taskdb_grafana;
+
+
+--
+-- Name: TABLE time_budget_violations; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT ON TABLE public.time_budget_violations TO taskdb_grafana;
 
 
 --
