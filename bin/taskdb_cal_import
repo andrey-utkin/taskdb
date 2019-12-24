@@ -3,7 +3,6 @@
 import os
 import sys
 import subprocess
-import parse
 import datetime
 import dateutil.parser
 import pytz
