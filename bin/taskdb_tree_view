@@ -42,8 +42,8 @@ TOP_CODENAME = sys.argv[2] if len(sys.argv) > 2 else None
 conn = psycopg2.connect("dbname=j user=j")
 cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 cur.execute("PREPARE SEL_BY_UUID_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE uuid = $1 AND status != 'deleted'");
-cur.execute("PREPARE SEL_TOP_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1 || ' .*[(]TOP[)]$')) AND parent IS NULL AND status != 'deleted'");
-cur.execute("PREPARE SEL_ALL_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1 || ' ')) AND status != 'deleted'");
+cur.execute("PREPARE SEL_TOP_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1 || '.*[(]TOP[)]$')) AND parent IS NULL AND status != 'deleted'");
+cur.execute("PREPARE SEL_ALL_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1)) AND status != 'deleted'");
 cur.execute("""
 PREPARE SEL_BY_PARENT_FROM_TREE_EDIT AS
 SELECT * FROM tasks
@@ -105,13 +105,18 @@ def status_str(row_status):
 
 def print_tree(tree, depth=0):
     row = tree['node']
+    if row['scheduled']:
+        sched_str = row['scheduled'].strftime('%m-%d %H:%M')
+    else:
+        sched_str = '-'
+
     print(
             '%-60s' % (
                 '*' * (depth + 1) + ' ' +
                 row['description']
                 ) +
             '[ %s]' % status_str(row['status']) +
-            ' %s' % row['scheduled'].strftime('%m-%d %H:%M') +
+            ' %s' % sched_str +
             ' %dh' % (int(row['duration'] or 0) // 3600) +
             ''
             )
@@ -261,7 +266,7 @@ def tree_validate(tree, codename):
     tree_validate_duration(tree)
     tree_validate_scheduled(tree)
     tree_validate_status(tree)
-    tree_validate_dod(tree, codename)
+    #tree_validate_dod(tree, codename)
 
 tree = dict()
 
