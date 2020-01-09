@@ -41,9 +41,9 @@ TOP_CODENAME = sys.argv[2] if len(sys.argv) > 2 else None
 
 conn = psycopg2.connect("dbname=j user=j")
 cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-cur.execute("PREPARE SEL_BY_UUID_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE uuid = $1 AND status != 'deleted'");
-cur.execute("PREPARE SEL_TOP_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1 || '.*[(]TOP[)]$')) AND parent IS NULL AND status != 'deleted'");
-cur.execute("PREPARE SEL_ALL_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1)) AND status != 'deleted'");
+cur.execute("PREPARE SEL_BY_UUID_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE uuid = $1 AND status in ('completed', 'pending')");
+cur.execute("PREPARE SEL_TOP_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1 || '.*[(]TOP[)]$')) AND parent IS NULL AND status in ('completed', 'pending')");
+cur.execute("PREPARE SEL_ALL_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1)) AND status in ('completed', 'pending')");
 cur.execute("""
 PREPARE SEL_BY_PARENT_FROM_TREE_EDIT AS
 SELECT * FROM tasks
@@ -61,7 +61,7 @@ WHERE
  )
 )
 AND
-status != 'deleted'
+status in ('completed', 'pending')
 ORDER BY scheduled
 """);
 # Pending only:
