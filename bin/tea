@@ -35,8 +35,8 @@ if row['annotation']:
 
 # Oddly, doesn't work when pointed at a script
 # FIXME Call $EDITOR
-child = subprocess.Popen(['/usr/bin/nvim', str(uuid)])
-child.wait()
+EDITOR = os.environ.get('EDITOR','vim')
+subprocess.call([EDITOR, str(uuid)])
 
 with open(uuid, 'rb') as f:
     annotation_edited = f.read().decode('utf-8')
