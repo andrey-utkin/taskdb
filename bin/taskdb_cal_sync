@@ -52,12 +52,15 @@ done
 # Look for lines like
 # "Deleting item 2bb6df40-0af5-4f76-acf0-d3fae801dca1 from fastmail_calendar_local/fb9ed04e-572b-477f-bdad-d6dbb32c0d82"
 # which mean the item has been removed in some external calendar app.
-# The most convenient reaction is to mark the item "completed" in the database.
+# The most convenient reaction is to mark the item "deleted" in the database.
+# Note: before, the action here was to mark the item "completed", but since
+# then I mark the items completed in bulk with "auto-tagging", while deleting
+# an unneeded item currently requires a manual database edit.
 UUIDS=$(grep "Deleting .* from .*_local/" "$SYNC_LOG_FILE" \
 	| cut -d ' ' -f 3)
 # Parse and update in DB
 for uuid in $UUIDS; do
-	"$MYDIR/tdone" "$uuid"
+	echo "UPDATE tasks SET status = 'deleted' WHERE uuid = '$uuid';" | psql
 	sleep 2 # to allow taskdb_listen_changes to pick up individual task changes not mixed together
 done
 
