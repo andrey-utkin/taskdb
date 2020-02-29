@@ -468,13 +468,6 @@ GRANT SELECT ON TABLE public.tdtw_report TO taskdb_grafana;
 
 
 --
--- Name: TABLE time_budget_violations; Type: ACL; Schema: public; Owner: -
---
-
-GRANT SELECT ON TABLE public.time_budget_violations TO taskdb_grafana;
-
-
---
 -- PostgreSQL database dump complete
 --
 
