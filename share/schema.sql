@@ -114,7 +114,8 @@ CREATE TABLE public.tasks (
     modified timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     ended timestamp with time zone,
     status public.task_status DEFAULT 'pending'::public.task_status NOT NULL,
-    uuid uuid DEFAULT public.uuid_generate_v4() NOT NULL
+    uuid uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    alias text
 );
 
 
@@ -137,7 +138,8 @@ CREATE VIEW public.conflicting AS
     t.modified,
     t.ended,
     t.status,
-    t.uuid
+    t.uuid,
+    t.alias
    FROM public.tasks t
   WHERE ((t.scheduled IS NOT NULL) AND (t.status = 'pending'::public.task_status) AND (t.duration > 0) AND (EXISTS ( SELECT another_task.scheduled,
             another_task.description,
@@ -153,7 +155,8 @@ CREATE VIEW public.conflicting AS
             another_task.modified,
             another_task.ended,
             another_task.status,
-            another_task.uuid
+            another_task.uuid,
+            another_task.alias
            FROM public.tasks another_task
           WHERE ((another_task.uuid <> t.uuid) AND (another_task.status = 'pending'::public.task_status) AND (another_task.duration > 0) AND (t.scheduled < (another_task.scheduled + ((another_task.duration)::double precision * '00:00:01'::interval))) AND ((t.scheduled + ((t.duration)::double precision * '00:00:01'::interval)) > another_task.scheduled))
          LIMIT 1)))
@@ -179,7 +182,8 @@ CREATE VIEW public.megatasks AS
     megatask.modified,
     megatask.ended,
     megatask.status,
-    megatask.uuid
+    megatask.uuid,
+    megatask.alias
    FROM public.tasks megatask
   WHERE ((megatask.status = 'pending'::public.task_status) AND (megatask.parent IS NULL) AND ((EXISTS ( SELECT child.scheduled,
             child.description,
@@ -195,7 +199,8 @@ CREATE VIEW public.megatasks AS
             child.modified,
             child.ended,
             child.status,
-            child.uuid
+            child.uuid,
+            child.alias
            FROM public.tasks child
           WHERE (child.parent = megatask.uuid))) OR ((megatask.dependencies IS NOT NULL) AND (NOT (EXISTS ( SELECT rdep.scheduled,
             rdep.description,
@@ -211,7 +216,8 @@ CREATE VIEW public.megatasks AS
             rdep.modified,
             rdep.ended,
             rdep.status,
-            rdep.uuid
+            rdep.uuid,
+            rdep.alias
            FROM public.tasks rdep
           WHERE ((megatask.uuid)::text = ANY (string_to_array(rdep.dependencies, '
 '::text)))))))))
@@ -237,7 +243,8 @@ CREATE VIEW public.overdue AS
     tasks.modified,
     tasks.ended,
     tasks.status,
-    tasks.uuid
+    tasks.uuid,
+    tasks.alias
    FROM public.tasks
   WHERE ((tasks.status = 'pending'::public.task_status) AND (((tasks.scheduled + ((COALESCE(tasks.duration, 0))::double precision * '00:00:01'::interval)) < CURRENT_TIMESTAMP) OR (tasks.due < CURRENT_TIMESTAMP)))
   ORDER BY tasks.scheduled;
@@ -262,7 +269,8 @@ CREATE VIEW public.tdt AS
     tasks.modified,
     tasks.ended,
     tasks.status,
-    tasks.uuid
+    tasks.uuid,
+    tasks.alias
    FROM public.tasks
   WHERE ((tasks.status = 'pending'::public.task_status) AND ((tasks.scheduled < (CURRENT_DATE + '24:00:00'::interval)) OR (tasks.due < (CURRENT_DATE + '24:00:00'::interval))))
   ORDER BY tasks.scheduled, tasks.due;
@@ -299,7 +307,8 @@ CREATE VIEW public.tdtnw AS
     tdt.modified,
     tdt.ended,
     tdt.status,
-    tdt.uuid
+    tdt.uuid,
+    tdt.alias
    FROM public.tdt
   WHERE ((tdt.project IS NULL) OR (tdt.project <> 'undo'::text));
 
@@ -335,7 +344,8 @@ CREATE VIEW public.tdtw AS
     tdt.modified,
     tdt.ended,
     tdt.status,
-    tdt.uuid
+    tdt.uuid,
+    tdt.alias
    FROM public.tdt
   WHERE (tdt.project = 'undo'::text);
 
@@ -350,6 +360,14 @@ CREATE VIEW public.tdtw_report AS
     tdtw.annotation AS annot,
     tdtw.uuid
    FROM public.tdtw;
+
+
+--
+-- Name: tasks alias_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tasks
+    ADD CONSTRAINT alias_unique UNIQUE (alias);
 
 
 --
