@@ -12,6 +12,7 @@ SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
+SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
@@ -54,38 +55,6 @@ CREATE FUNCTION public.changes_notify_fn() RETURNS trigger
 -- variables
 BEGIN
  PERFORM pg_notify('CHANGES', replace(current_query(), E'\n', '\n'));
- RETURN NEW;
-END;
-$$;
-
-
---
--- Name: update_ended_fn(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.update_ended_fn() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
- IF NEW.status in ('completed', 'deleted', 'cancelled') and (TG_OP = 'INSERT' or OLD.status != NEW.status) THEN
-  NEW.ended := CURRENT_TIMESTAMP;
- END IF;
- RETURN NEW;
-END;
-$$;
-
-
---
--- Name: update_modified_fn(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.update_modified_fn() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
- IF (NEW.modified IS NOT DISTINCT FROM OLD.modified) THEN
-  NEW.modified := CURRENT_TIMESTAMP;
- END IF;
  RETURN NEW;
 END;
 $$;
@@ -155,6 +124,38 @@ SELECT '}' AS value, 3 AS order_
 
 SELECT * FROM full_graph ORDER BY order_
 
+$$;
+
+
+--
+-- Name: update_ended_fn(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.update_ended_fn() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+ IF NEW.status in ('completed', 'deleted', 'cancelled') and (TG_OP = 'INSERT' or OLD.status != NEW.status) THEN
+  NEW.ended := CURRENT_TIMESTAMP;
+ END IF;
+ RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: update_modified_fn(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.update_modified_fn() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+ IF (NEW.modified IS NOT DISTINCT FROM OLD.modified) THEN
+  NEW.modified := CURRENT_TIMESTAMP;
+ END IF;
+ RETURN NEW;
+END;
 $$;
 
 
