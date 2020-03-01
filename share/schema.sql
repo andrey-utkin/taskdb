@@ -89,6 +89,37 @@ CREATE TABLE public.tasks (
 
 
 --
+-- Name: depgraph(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.depgraph(head_uuid uuid) RETURNS SETOF public.tasks
+    LANGUAGE sql
+    AS $$
+
+WITH RECURSIVE depgraph AS
+(
+	(
+		SELECT *
+		FROM tasks
+		WHERE tasks.uuid = head_uuid
+	)
+	UNION ALL
+	(
+		SELECT n.*
+		FROM tasks AS n, depgraph AS r
+		WHERE (
+		       n.parent = r.uuid
+		       OR
+		       r.dependencies ~ n.uuid::text
+		      )
+		      AND n.status IN ('pending', 'completed')
+	)
+)
+SELECT * FROM depgraph
+$$;
+
+
+--
 -- Name: graph(public.tasks[]); Type: FUNCTION; Schema: public; Owner: -
 --
 
