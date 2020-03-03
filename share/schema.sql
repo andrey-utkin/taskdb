@@ -120,6 +120,45 @@ $$;
 
 
 --
+-- Name: depgraph_root_to_selection(uuid, public.tasks[]); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.depgraph_root_to_selection(root uuid, selection_array public.tasks[]) RETURNS SETOF public.tasks
+    LANGUAGE sql
+    AS $$
+
+WITH
+minimal_dataset AS (
+ SELECT * FROM unnest(selection_array)
+),
+
+conservative_dataset AS (
+ SELECT * FROM depgraph(root)
+),
+
+challenged_subset AS (
+SELECT * FROM conservative_dataset
+EXCEPT
+SELECT * FROM minimal_dataset
+),
+
+data AS (
+SELECT * FROM minimal_dataset
+UNION
+SELECT * FROM challenged_subset
+WHERE EXISTS(
+ SELECT * FROM depgraph(challenged_subset.uuid)
+ INTERSECT
+ SELECT * FROM minimal_dataset
+)
+)
+
+SELECT * FROM data
+
+$$;
+
+
+--
 -- Name: graph(public.tasks[]); Type: FUNCTION; Schema: public; Owner: -
 --
 
