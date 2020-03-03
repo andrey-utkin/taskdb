@@ -136,12 +136,12 @@ SELECT '"' || selection.uuid || '" [label="' || COALESCE(selection.alias, select
 FROM selection
 ),
 edges AS (
-SELECT '"' || s1.uuid || '" -> "' || dep || '"' AS value, 2 AS order_
+SELECT '"' || s1.uuid || '" -> "' || dep.uuid || '"' AS value, 2 AS order_
 FROM selection s1,
      LATERAL (
-      SELECT unnest(string_to_array(s1.dependencies, E'\n'))
+      SELECT unnest(string_to_array(s1.dependencies, E'\n')) AS uuid
       INTERSECT
-      SELECT uuid::text FROM selection
+      SELECT uuid::text FROM selection AS uuid
      ) AS dep
 UNION
 SELECT '"' || selection.parent || '" -> "' || selection.uuid || '"' AS value, 2 AS order_
