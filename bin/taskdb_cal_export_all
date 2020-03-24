@@ -28,7 +28,10 @@ def existing_file_uptodate(row):
 
     return dtstamp == rounded_modified
 
-conn = psycopg2.connect("dbname=j user=j")
+with open('{home}/.taskdb/conn_string_py'.format(home=os.getenv("HOME")), 'r') as file:
+    conn_string = file.read()
+
+conn = psycopg2.connect(conn_string)
 cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
 cur.execute("SELECT uuid, modified FROM tasks WHERE ((tasks.status = 'pending'::public.task_status) AND (tasks.scheduled IS NOT NULL));")
