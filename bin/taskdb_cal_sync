@@ -17,7 +17,7 @@ if [[ -d .git ]]; then
 	git commit --quiet --all -m "Changes after us refilling the dir from DB"
 fi
 
-SYNC_LOG_FILE="/home/j/.taskdb/vdirsyncer.out"
+SYNC_LOG_FILE="$HOME/.taskdb/vdirsyncer.out"
 vdirsyncer sync "fastmail_calendar/$CAL_UUID" &> "$SYNC_LOG_FILE"
 VS_RET=$?
 cat "$SYNC_LOG_FILE"
