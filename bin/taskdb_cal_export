@@ -63,8 +63,8 @@ event.add_component(alarm)
 
 cal.add_component(event)
 
-# taskdb-test calendar
-directory = '/home/j/.calendars/fb9ed04e-572b-477f-bdad-d6dbb32c0d82'
+# taskdb calendar dir path
+directory = '{home}/.taskdb/calendar'.format(home=os.getenv("HOME"))
 f = open(os.path.join(directory, row['uuid'] + '.ics'), 'wb')
 f.write(cal.to_ical())
 f.close()

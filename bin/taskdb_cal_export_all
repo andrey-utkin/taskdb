@@ -11,7 +11,7 @@ import icalendar
 mydir = os.path.dirname(__file__)
 mydir = os.path.abspath(mydir)
 mydir += '/'
-cal_path = '/home/j/.calendars/fb9ed04e-572b-477f-bdad-d6dbb32c0d82'
+cal_path = '{home}/.taskdb/calendar'.format(home=os.getenv("HOME"))
 
 def existing_file_uptodate(row):
     filepath = os.path.join(cal_path, row['uuid'] + '.ics')

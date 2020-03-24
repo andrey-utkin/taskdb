@@ -10,14 +10,12 @@ import psycopg2
 import psycopg2.extras
 import icalendar
 
-calendar = 'fb9ed04e-572b-477f-bdad-d6dbb32c0d82'
-
 # Insert or update?
 action = sys.argv[1]
 
 # Locate ical file
 uuid = sys.argv[2]
-filepath = '/home/j/.calendars/' + calendar + '/' + uuid + '.ics'
+filepath = '{home}/.taskdb/calendar/{uuid}.ics'.format(home=os.getenv("HOME"), uuid=uuid)
 
 # Parse it
 # https://gist.github.com/meskarune/63600e64df56a607efa211b9a87fb443
