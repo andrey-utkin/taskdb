@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cp /HOME/{.password-store,.gnupg,.vdirsyncer} ~
+export LC_ALL=C.UTF-8 LANG=C.UTF-8 # vdirsyncer needs this
+yes | vdirsyncer discover fastmail_calendar 2> >(tee discover.out)
+CAL_UUID=$(grep '"taskdb-demo"' discover.out | cut -d '"' -f 2)
+mkdir ~/.taskdb
+ln -sv ~/.calendars/"$CAL_UUID" ~/.taskdb/calendar
+
+echo "Next step: launch taskdb_cal_sync_loop"
