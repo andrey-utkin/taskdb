@@ -1,0 +1,26 @@
+# Put this into ~/.vdirsyncer/config
+
+[general]
+# A folder where vdirsyncer can store some metadata about each pair.
+status_path = "~/.vdirsyncer/status/"
+
+# CALDAV
+[pair fastmail_calendar]
+a = "fastmail_calendar_local"
+b = "fastmail_calendar_remote"
+collections = ["from a", "from b"]
+
+# Calendars also have a color property
+metadata = ["displayname", "color"]
+conflict_resolution = ["command", "/usr/bin/taskdb_cal_sync_conflict_resolve"]
+
+[storage fastmail_calendar_local]
+type = "filesystem"
+path = "~/.calendars/"
+fileext = ".ics"
+
+[storage fastmail_calendar_remote]
+type = "caldav"
+url = "https://caldav.messagingengine.com/"
+username = "andrey_utkin@fastmail.com"
+password.fetch = ["command", "pass", "taskdb/caldav"]
