@@ -2,6 +2,7 @@
 
 """Add new task to DB"""
 
+import os
 import pathlib
 import sys
 import psycopg2
