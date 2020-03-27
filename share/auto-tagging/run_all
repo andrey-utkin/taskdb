@@ -1,0 +1,1 @@
+for x in suggestions/*; do ./edit_and_exec $x || break; done

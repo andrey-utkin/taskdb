@@ -1,0 +1,29 @@
+#!/bin/bash
+#set -e
+
+if [[ $# != 1 ]]; then
+	echo "Usage: $0 <specific suggestion dir path>"
+fi
+
+SUGGESTION_DIR=$1
+# FIXME: security: use private tmpdir
+SUGGESTED_COMMANDS_FILE=$(mktemp taskdb.auto-tagging.XXXXXXX)
+./suggest "$SUGGESTION_DIR" > "$SUGGESTED_COMMANDS_FILE"
+
+if ! [[ -s "$SUGGESTED_COMMANDS_FILE" ]]; then
+	rm "$SUGGESTED_COMMANDS_FILE"
+	exit 0
+fi
+
+# * Launch $EDITOR on this file
+# Abnormal exit aborts the script (e.g. use vim's ":cq")
+$EDITOR "$SUGGESTED_COMMANDS_FILE"
+if [[ "$?" != 0 ]]; then
+	rm "$SUGGESTED_COMMANDS_FILE"
+	exit 1
+fi
+
+# * Feed the file contents into `psql`
+psql < "$SUGGESTED_COMMANDS_FILE"
+
+rm "$SUGGESTED_COMMANDS_FILE"

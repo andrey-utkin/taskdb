@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+
+# Traverse matching expressions files, in alphanum order. For each:
+# * Run SELECT uuid, descr, scheduled FROM tasks WHERE <cond> AND <dates range cond> AND status in ('pending', 'completed')
+# * Format "UPDATE SET <what matching expr suggests - proj, tags> WHERE uuid in <uuids, one per line, with descr in comment>"
+
+"""
+"""
+
+import os
+import sys
+import subprocess
+import psycopg2
+import psycopg2.extras
+from datetime import datetime, timedelta
+import pytz
+
+suggestion_dir = sys.argv[1]
+
+with open('{home}/.taskdb/conn_string_py'.format(home=os.getenv("HOME")), 'r') as file:
+    conn_string = file.read()
+
+conn = psycopg2.connect(conn_string)
+cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+with open(suggestion_dir + '/cond.sql.inc', 'r') as cond_file:
+    cond = cond_file.read()
+with open(suggestion_dir + '/set.sql.inc', 'r') as set_file:
+    set_sql_code = set_file.read()
+
+# TODO use BETWEEN?
+#date_range_cond = "scheduled::date >= '2019-08-12' AND scheduled::date < '2019-08-26'"
+date_range_cond = "scheduled::date >= '2019-08-12'"
+
+query = f"SELECT * FROM tasks AS t WHERE {cond} AND {date_range_cond} AND t.status in ('pending', 'completed') ORDER BY scheduled"
+
+cur.execute(query)
+
+if cur.rowcount == 0:
+    sys.exit(0)
+
+tagging_query = f'UPDATE tasks AS t SET \n{set_sql_code} WHERE t.uuid IN ('
+
+while True:
+    row = cur.fetchone()
+    if not row:
+        break
+
+    tagging_query += "\n'" + row['uuid'] + "', -- " + str(row['scheduled']) + ' ' + row['description']
+
+# NULL is needed to accomodate trailing comma in last entry
+tagging_query += '\nNULL\n);'
+
+print(tagging_query)
