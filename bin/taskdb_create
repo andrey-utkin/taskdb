@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+USERNAME=$(whoami)
+
+createuser "$USERNAME" -Upostgres
+createdb "$USERNAME" -Upostgres --owner="$USERNAME"
+createuser taskdb_grafana -Upostgres
+echo 'CREATE EXTENSION "uuid-ossp"' | psql -Upostgres "$USERNAME" 
+psql < /usr/share/taskdb-9999/schema.sql
+
+mkdir ~/.taskdb
+cd ~/.taskdb
+echo "dbname=$USERNAME user=$USERNAME" > conn_string_py
