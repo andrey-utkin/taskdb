@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import subprocess
+import psycopg2
+import psycopg2.extras
+from datetime import datetime, timedelta
+import pytz
+from pprint import pprint
+
+
+TOP_UUID = sys.argv[1]
+TOP_CODENAME = sys.argv[2] if len(sys.argv) > 2 else None
+
+with open('{home}/.taskdb/conn_string_py'.format(home=os.getenv("HOME")), 'r') as file:
+    conn_string = file.read()
+
+conn = psycopg2.connect(conn_string)
+cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+cur.execute("PREPARE SEL_BY_UUID_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE uuid = $1 AND status != 'deleted'");
+cur.execute("PREPARE SEL_TOP_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1 || '.*[(]TOP[)]$')) AND parent IS NULL AND status != 'deleted'");
+cur.execute("PREPARE SEL_ALL_BY_CODENAME_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE (description ~ ('^' || $1)) AND status != 'deleted'");
+cur.execute("""
+PREPARE SEL_BY_PARENT_FROM_TREE_EDIT AS
+SELECT * FROM tasks
+WHERE
+(
+ parent = $1
+ OR
+ (
+  uuid::text IN
+   (
+   SELECT UNNEST(STRING_TO_ARRAY(dependencies, '\n'))
+   FROM tasks
+   WHERE uuid=$1
+   )
+ )
+)
+AND
+status not in ('deleted', 'cancelled')
+ORDER BY scheduled
+""");
+# Pending only:
+#cur.execute("PREPARE SEL_BY_PARENT_FROM_TREE_EDIT AS SELECT * FROM tasks WHERE parent = $1 AND status = 'pending' ORDER BY scheduled");
+
+def get_top_by_codename(codename):
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("EXECUTE SEL_TOP_BY_CODENAME_FROM_TREE_EDIT (%s)", (codename,))
+    row = cur.fetchone()
+    return row
+
+def get_by_uuid(uuid):
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("EXECUTE SEL_BY_UUID_FROM_TREE_EDIT (%s)", (uuid,))
+    row = cur.fetchone()
+    return row
+
+def get_by_parent(uuid):
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("EXECUTE SEL_BY_PARENT_FROM_TREE_EDIT (%s)", (uuid,))
+    rows = cur.fetchall()
+    return rows
+
+def get_children_recursively(uuid):
+    children_db_rows = get_by_parent(uuid)
+    children_list = []
+    for row in children_db_rows:
+        child = dict()
+        child['node'] = row
+        child['children'] = get_children_recursively(row['uuid'])
+        children_list.append(child)
+    return children_list
+
+def status_str(row_status):
+    if row_status == 'pending':
+        return ' ';
+    if row_status == 'completed':
+        return 'V';
+    else:
+        return 'Z';
+
+
+def earliest_deep_subtask_starts_at(tree, earliest_starttime_so_far):
+
+    if tree['node']['scheduled']:
+        if not earliest_starttime_so_far or tree['node']['scheduled'] < earliest_starttime_so_far:
+            earliest_starttime_so_far = tree['node']['scheduled']
+
+    for subtask in tree['children']:
+        earliest_starttime_so_far = earliest_deep_subtask_starts_at(subtask, earliest_starttime_so_far)
+        
+    return earliest_starttime_so_far
+
+
+def print_tree(tree, depth=0):
+    row = tree['node']
+    if row['scheduled']:
+        sched_str = row['scheduled'].strftime('%m-%d %H:%M')
+    else:
+        sched_str = '-'
+    if depth == 0:
+        print('gantt')
+        print('title {title}'.format(title=row['description'].replace(' (TOP)', '')))
+
+    status = []
+    if row['status'] == 'completed':
+        status.append('done')
+
+    if tree['children']:
+        scheduled = earliest_deep_subtask_starts_at(tree, None)
+        # Should be scheduled at the time of completion of latest subtask.
+        # If not, validation function will warn.
+        ends_at = row['scheduled']
+    else:
+        scheduled = row['scheduled']
+        ends_at = 1 * (row['duration'] if row['duration'] is not None else 0)
+        ends_at = str(ends_at) + 's'
+
+    status = ', '.join(status)
+    if status:
+        status += ','
+
+    print('    {description} :{status} {scheduled}, {duration}'.format(
+        description=row['description']\
+                .replace(':', '')\
+                .replace(',', '')\
+                ,
+        status=status,
+        scheduled=scheduled,
+        duration=ends_at,
+        ))
+
+    for child in tree['children']:
+        print_tree(child, depth + 1)
+
+def tree_search(tree, uuid):
+    if tree['node']['uuid'] == uuid:
+        return tree['node']
+    for subtree in tree['children']:
+        res = tree_search(subtree, uuid)
+        if res:
+            return res
+
+def tree_search_descr_prefix(tree, descr_prefix):
+    if tree['node']['description'].startswith(descr_prefix):
+        return tree['node']
+    for subtree in tree['children']:
+        res = tree_search_descr_prefix(subtree, descr_prefix)
+        if res:
+            return res
+
+def tree_validate_duration(tree):
+    has_childs = not not tree['children']
+    has_duration = not not tree['node']['duration']
+    if has_childs and has_duration:
+        print("{uuid} ({description}) has subtasks, but also has duration set to {duration}, unset the duration!".format(**tree['node']))
+    if not has_childs and not has_duration:
+        print("{uuid} ({description}) has no subtasks, and has duration unset, set the duration!".format(**tree['node']))
+
+    for subtree in tree['children']:
+        tree_validate_duration(subtree)
+
+def tree_validate_status(tree):
+    if not tree['children']:
+        return
+
+    can_have_pending_subtasks = tree['node']['status'] == 'pending'
+    has_any_pending_subtasks = False
+
+    for subtree in tree['children']:
+        if subtree['node']['status'] == 'pending':
+            has_any_pending_subtasks = True
+        tree_validate_status(subtree)
+
+    if has_any_pending_subtasks and not can_have_pending_subtasks:
+        print("{uuid} ({description}) is not in pending status, but has pending subtasks".format(**tree['node']))
+    if can_have_pending_subtasks and not has_any_pending_subtasks:
+        print("{uuid} ({description}) is in pending status, but has no pending subtasks".format(**tree['node']))
+
+def tree_validate_scheduled(tree):
+    if not tree['node']['scheduled']:
+            print("{uuid} ({description}) is not scheduled!".format(**tree['node']))
+
+    last_subtask_ends_at = None
+    last_subtask = None
+
+    for subtask in tree['children']:
+        if tree['node']['scheduled'] and subtask['node']['scheduled'] \
+        and tree['node']['scheduled'] < subtask['node']['scheduled']:
+            print("{uuid} ({description}) is scheduled for {scheduled}, earlier than its subtask:".format(**tree['node']))
+            print("    {uuid} ({description}) {scheduled}".format(**subtask['node']))
+
+        tree_validate_scheduled(subtask)
+
+        subtask_ends_at = subtask['node']['scheduled']
+        if subtask['node']['duration']:
+            subtask_ends_at += timedelta(seconds=subtask['node']['duration'])
+        if not last_subtask_ends_at or subtask_ends_at > last_subtask_ends_at:
+            last_subtask_ends_at = subtask_ends_at
+            last_subtask = subtask['node']
+
+    if last_subtask_ends_at and tree['node']['scheduled'] > last_subtask_ends_at:
+        print("{uuid} ({description}) is scheduled for {scheduled}, later than its last subtask is completed:".format(**tree['node']))
+        print("    {uuid} ({description}) ends at {ends_at}".format(**subtask['node'], ends_at=last_subtask_ends_at))
+
+
+def tree_validate(tree, codename):
+    # Ensure no orphan subtasks
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("EXECUTE SEL_ALL_BY_CODENAME_FROM_TREE_EDIT (%s)", (codename,))
+    rows = cur.fetchall()
+    for row in rows:
+        if tree_search(tree, row['uuid']) is None:
+            print("{uuid} ({description}) has codename in descrption, but is not linked; parent is {parent}".format(**row))
+
+    tree_validate_duration(tree)
+    tree_validate_scheduled(tree)
+    tree_validate_status(tree)
+    #tree_validate_dod(tree, codename)
+
+tree = dict()
+
+if TOP_CODENAME:
+    top_task = get_top_by_codename(TOP_CODENAME)
+    TOP_UUID = top_task['uuid']
+else:
+    top_task = get_by_uuid(TOP_UUID)
+    # TODO extract TOP_CODENAME
+
+tree['node'] = top_task
+tree['children'] = get_children_recursively(TOP_UUID)
+
+print_tree(tree)
+#tree_validate(tree, TOP_CODENAME)
