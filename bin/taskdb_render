@@ -1,0 +1,19 @@
+#!/bin/bash
+
+aspect=$1
+timeline=$2
+
+render() {
+    QUERY_SCRIPT=$1
+    IMAGE=$2
+    dot \
+    -Goverlap=false \
+    -Gsplines=true \
+    -Grankdir=LR \
+    -Tpng \
+    <(psql -qtAX -f "$QUERY_SCRIPT") \
+    -o /var/www/taskdb/htdocs/"$IMAGE"
+}
+
+mydir=$(dirname "$0")
+render <("$mydir"/taskdb_render_query_gen "$aspect" "$timeline") "${aspect}_${timeline}.png"

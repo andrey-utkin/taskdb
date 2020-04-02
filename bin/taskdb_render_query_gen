@@ -1,0 +1,94 @@
+#!/usr/bin/python3
+
+import os
+import sys
+
+# undo or personal
+aspect = sys.argv[1]
+# today, tomorrow, thisweek, nextweek, allpending
+timeframe = sys.argv[2]
+
+root = aspect
+exclusions = []
+if aspect == 'personal':
+    root = 'root'
+    exclusions = ['undo']
+
+status_condition = "status IN ('pending', 'completed')"
+if timeframe == 'allpending':
+    status_condition = "status = 'pending'"
+
+subset_condition = "AND uuid IN (SELECT uuid FROM depgraph(alias('{root}')))".format(root=root)
+for exclusion in exclusions:
+    subset_condition += "\n  AND uuid NOT IN (SELECT uuid FROM depgraph(alias('{exclusion}')))".format(exclusion=exclusion)
+
+time_condition = ''
+if timeframe == 'yesterday':
+    time_condition = '''
+  AND scheduled BETWEEN date_trunc('day', CURRENT_DATE) - INTERVAL '1 days'
+                    AND date_trunc('day', CURRENT_DATE)
+                     '''
+elif timeframe == 'today':
+    time_condition = '''
+  AND scheduled BETWEEN date_trunc('day', CURRENT_DATE)
+                    AND date_trunc('day', CURRENT_DATE) + INTERVAL '1 days'
+                     '''
+elif timeframe == 'tomorrow':
+    time_condition = '''
+  AND scheduled BETWEEN date_trunc('day', CURRENT_DATE) + INTERVAL '1 days'
+                    AND date_trunc('day', CURRENT_DATE) + INTERVAL '2 days'
+                     '''
+elif timeframe in 'prevweek':
+    time_condition = '''
+  AND scheduled BETWEEN date_trunc('week', CURRENT_DATE) - INTERVAL '1 weeks'
+                    AND date_trunc('week', CURRENT_DATE)
+                     '''
+elif timeframe in 'week-before-prev':
+    time_condition = '''
+  AND scheduled BETWEEN date_trunc('week', CURRENT_DATE) - INTERVAL '2 weeks'
+                    AND date_trunc('week', CURRENT_DATE) - INTERVAL '1 weeks'
+                     '''
+elif timeframe == 'thisweek':
+    time_condition = '''
+  AND scheduled BETWEEN date_trunc('week', CURRENT_DATE)
+                    AND date_trunc('week', CURRENT_DATE) + INTERVAL '1 weeks'
+                     '''
+elif timeframe == 'nextweek':
+    time_condition = '''
+  AND scheduled BETWEEN date_trunc('week', CURRENT_DATE) + INTERVAL '1 weeks'
+                    AND date_trunc('week', CURRENT_DATE) + INTERVAL '2 weeks'
+                     '''
+elif timeframe in ['all', 'allpending']:
+    time_condition = ''
+else:
+    raise Exception('Unknown timeframe')
+
+extra_condition = 'AND NOT (scheduled IS NULL AND COALESCE(duration, 0) = 0)'
+if '--include-unscheduled-and-empty' in sys.argv:
+    extra_condition = ''
+
+query = '''
+SELECT value FROM graph((
+SELECT ARRAY_AGG(depgraph_root_to_selection) FROM depgraph_root_to_selection
+(
+ (alias('{root}')),
+ (
+  SELECT array_agg(tasks) FROM tasks
+  WHERE
+  {status_condition}
+  {subset_condition}
+  {time_condition}
+  {extra_condition}
+ )
+)
+))
+ORDER BY order_
+'''.format(
+    root=root,
+    status_condition=status_condition,
+    subset_condition=subset_condition,
+    time_condition=time_condition,
+    extra_condition=extra_condition
+    )
+
+print(query)
