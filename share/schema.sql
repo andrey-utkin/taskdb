@@ -159,6 +159,35 @@ $$;
 
 
 --
+-- Name: deps(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.deps(arg uuid) RETURNS SETOF public.tasks
+    LANGUAGE sql
+    AS $$
+
+WITH strictly_deps AS (
+ SELECT dependencies FROM tasks WHERE uuid = arg
+)
+
+SELECT n.*
+FROM tasks AS n
+WHERE
+n.status IN ('pending', 'completed')
+AND n.parent = arg
+
+UNION
+
+SELECT n.*
+FROM tasks as n, strictly_deps
+WHERE
+n.status IN ('pending', 'completed')
+AND n.uuid::text IN (SELECT unnest(string_to_array(strictly_deps.dependencies, E'\n')) AS uuid)
+
+$$;
+
+
+--
 -- Name: graph(public.tasks[]); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -248,6 +277,35 @@ repr AS (
 SELECT
  '"' || repr.uuid || '" [label="' || repr.label || '" color="' || repr.color || '"]'
 FROM repr
+
+$$;
+
+
+--
+-- Name: rdeps(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.rdeps(arg uuid) RETURNS SETOF public.tasks
+    LANGUAGE sql
+    AS $$
+
+WITH arg_task AS (
+ SELECT parent FROM tasks WHERE uuid = arg
+)
+
+SELECT n.*
+FROM tasks AS n, arg_task
+WHERE
+n.status IN ('pending', 'completed')
+AND uuid = arg_task.parent
+
+UNION
+
+SELECT n.*
+FROM tasks as n
+WHERE
+n.status IN ('pending', 'completed')
+AND arg::text IN (SELECT unnest(string_to_array(n.dependencies, E'\n')) AS uuid)
 
 $$;
 
@@ -350,42 +408,24 @@ CREATE VIEW public.megatasks AS
     megatask.uuid,
     megatask.alias
    FROM public.tasks megatask
-  WHERE ((megatask.status = 'pending'::public.task_status) AND (megatask.parent IS NULL) AND ((EXISTS ( SELECT child.scheduled,
-            child.description,
-            child.annotation,
-            child.project,
-            child.priority,
-            child.due,
-            child.duration,
-            child.tags,
-            child.parent,
-            child.dependencies,
-            child.entry,
-            child.modified,
-            child.ended,
-            child.status,
-            child.uuid,
-            child.alias
-           FROM public.tasks child
-          WHERE (child.parent = megatask.uuid))) OR ((megatask.dependencies IS NOT NULL) AND (NOT (EXISTS ( SELECT rdep.scheduled,
-            rdep.description,
-            rdep.annotation,
-            rdep.project,
-            rdep.priority,
-            rdep.due,
-            rdep.duration,
-            rdep.tags,
-            rdep.parent,
-            rdep.dependencies,
-            rdep.entry,
-            rdep.modified,
-            rdep.ended,
-            rdep.status,
-            rdep.uuid,
-            rdep.alias
-           FROM public.tasks rdep
-          WHERE ((megatask.uuid)::text = ANY (string_to_array(rdep.dependencies, '
-'::text)))))))))
+  WHERE ((megatask.status = 'pending'::public.task_status) AND (megatask.scheduled IS NOT NULL) AND (COALESCE(megatask.duration, 0) = 0) AND (EXISTS ( SELECT public.deps(megatask.uuid) AS deps)) AND (NOT (EXISTS ( SELECT parent.scheduled,
+            parent.description,
+            parent.annotation,
+            parent.project,
+            parent.priority,
+            parent.due,
+            parent.duration,
+            parent.tags,
+            parent.parent,
+            parent.dependencies,
+            parent.entry,
+            parent.modified,
+            parent.ended,
+            parent.status,
+            parent.uuid,
+            parent.alias
+           FROM public.rdeps(megatask.uuid) parent(scheduled, description, annotation, project, priority, due, duration, tags, parent, dependencies, entry, modified, ended, status, uuid, alias)
+          WHERE (parent.scheduled IS NOT NULL)))))
   ORDER BY megatask.scheduled;
 
 

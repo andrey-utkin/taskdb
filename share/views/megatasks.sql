@@ -1,18 +1,13 @@
 CREATE OR REPLACE VIEW megatasks AS
-SELECT * FROM tasks as megatask
-WHERE status = 'pending'
-AND parent IS NULL
-AND (
-	-- has child tasks
-	EXISTS(SELECT * FROM tasks AS child WHERE child.parent = megatask.uuid)
-	OR (
-		-- has deps and is not a dep of anyone
-		dependencies IS NOT NULL
-		AND
-		NOT EXISTS(
-			SELECT * FROM tasks AS rdep
-			WHERE megatask.uuid::text = ANY(string_to_array(rdep.dependencies, E'\n'))
-		)
-	)
-)
+SELECT * FROM tasks AS megatask
+WHERE
+status = 'pending'
+AND megatask.scheduled IS NOT NULL
+AND COALESCE(megatask.duration, 0) = 0
+AND EXISTS ((SELECT deps(megatask.uuid)))
+AND NOT EXISTS
+((
+SELECT * FROM rdeps(megatask.uuid) AS parent
+WHERE parent.scheduled IS NOT NULL
+))
 ORDER BY scheduled
