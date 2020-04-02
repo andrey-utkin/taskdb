@@ -16,7 +16,7 @@ selection AS (
 SELECT * FROM unnest(selection_array.*)
 ),
 nodes AS (
-SELECT '"' || selection.uuid || '" [label="' || COALESCE(selection.alias, selection.description) || '"]' AS value, 1 AS order_
+SELECT graph_node_repr(selection) AS value, 1 AS order_
 FROM selection
 ),
 edges AS (
