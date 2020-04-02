@@ -45,6 +45,17 @@ CREATE TYPE public.task_status AS ENUM (
 
 
 --
+-- Name: alias(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.alias(alias_ text) RETURNS uuid
+    LANGUAGE sql
+    AS $$
+SELECT uuid FROM tasks WHERE tasks.alias = alias_
+$$;
+
+
+--
 -- Name: changes_notify_fn(); Type: FUNCTION; Schema: public; Owner: -
 --
 
