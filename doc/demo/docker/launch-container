@@ -2,14 +2,13 @@
 
 CONTAINER_ID=$(
     docker run \
-        --rm -d \
-        -p 3000:3000 \
+	-d \
+	-p 3000:3000 \
 	-p 8000:8000 \
 	-p 25482:25482 \
 	-p 5432:5432 \
 	-p 80:80 \
-	--mount type=bind,src="$(pwd)"/HOME,target='/HOME',readonly \
-	taskdb-gentoo
+	andreyutkin/taskdb-provisioned:latest
 )
 
 docker exec -it $CONTAINER_ID /bin/bash -i
