@@ -10,10 +10,10 @@ render() {
     -Goverlap=false \
     -Gsplines=true \
     -Grankdir=LR \
-    -Tpng \
+    -Tsvg \
     <(psql -qtAX -f "$QUERY_SCRIPT") \
     -o /var/www/taskdb/htdocs/"$IMAGE"
 }
 
 mydir=$(dirname "$0")
-render <("$mydir"/taskdb_render_query_gen "$aspect" "$timeline") "${aspect}_${timeline}.png"
+render <("$mydir"/taskdb_render_query_gen "$aspect" "$timeline") "${aspect}_${timeline}.svg"
