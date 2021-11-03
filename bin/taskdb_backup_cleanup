@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+BKP_LOCATION=/var/backups/taskdb
+BKP_AGE=15 # days
+
+pushd $BKP_LOCATION >/dev/null
+
+find . -mindepth 1 -mtime +$BKP_AGE -delete

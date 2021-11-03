@@ -1,0 +1,31 @@
+#!/bin/bash
+set -e
+set -o pipefail
+
+BKP_LOCATION=/var/backups/taskdb
+
+mkdir -p $BKP_LOCATION
+chmod u=rwx,g=,o= $BKP_LOCATION
+pushd $BKP_LOCATION >/dev/null
+
+DATABASES=$(
+	echo -e '\pset format unaligned\n \pset tuples_only\n SELECT datname FROM pg_database;' \
+	| psql -Upostgres --quiet \
+	| grep -v '^\(postgres\|template[01]\)$'
+)
+
+DATE=$(date +%FT%H:%M:%S)
+
+for dbname in $DATABASES
+do
+	FILENAME="${dbname}_$DATE"
+	pg_dump -Upostgres $dbname | xz -zce > "${FILENAME}.sql.xz"
+done
+
+pg_basebackup \
+	-D - -F tar --gzip \
+	--wal-method=fetch --write-recovery-conf \
+	--verbose \
+	--label="taskdb basebackup $DATE" \
+	-Upostgres \
+	> basebackup_"$DATE".tar.gz
