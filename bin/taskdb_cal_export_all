@@ -61,5 +61,5 @@ with os.scandir(cal_path) as it:
             stale_files.append(entry.name)
 
 for stale in stale_files:
-    print('Removind stale file {}'.format(stale))
+    print('Removing stale file {}'.format(stale))
     os.unlink(os.path.join(cal_path, stale))
