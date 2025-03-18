@@ -1,0 +1,7 @@
+#!/bin/bash
+
+while pgrep --full --list-full --exact '/bin/bash /usr/bin/taskdb_cal_sync' >/dev/null
+do
+	echo -n .
+	sleep 1
+done
